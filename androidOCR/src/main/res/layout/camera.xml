@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/background"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+
+    >
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+	  <SurfaceView
+  		android:id="@+id/camerapreview"
+  		android:layout_width="wrap_content"
+  		android:layout_height="wrap_content"
+  	/>
+
+    <ImageView
+        android:id="@+id/camera_preview_img"
+        android:scaleType="fitXY"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" />
+    </FrameLayout>
+    <!--<FrameLayout-->
+        <!--android:id="@+id/parent_contant"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:visibility="gone"-->
+        <!--android:layout_height="match_parent">-->
+    <!--<fragment-->
+        <!--android:name="de.bht.bachelor.ui.fragments.CameraFragment"-->
+        <!--android:id="@+id/contant"-->
+        <!--android:vi-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent" />-->
+    <!--</FrameLayout>-->
+
+</LinearLayout>

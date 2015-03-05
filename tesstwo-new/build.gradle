@@ -1,0 +1,28 @@
+apply plugin: 'com.android.library'
+//apply plugin: 'hugo'
+
+
+android {
+    compileSdkVersion 8
+    buildToolsVersion "21.1.1"
+    sourceSets.main.jni.srcDirs = []
+
+    defaultConfig {
+//        applicationId "com.googlecode.tesseract.android"
+        minSdkVersion 8
+        targetSdkVersion 21
+        ndk {
+            moduleName "tesstwo"
+        }
+    }
+
+
+    buildTypes {
+        release {
+//            runProguard false
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}

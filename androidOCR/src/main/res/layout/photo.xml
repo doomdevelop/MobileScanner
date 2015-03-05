@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+
+         <FrameLayout
+        android:id="@+id/frameLayout"
+         android:orientation="horizontal"
+    	android:gravity="center"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+         >
+    	
+ 	 	<de.bht.bachelor.ui.CustomImageView
+ 	 	    android:id="@+id/picview"
+            android:scaleType="centerInside"
+	   		android:layout_width="fill_parent"
+   			android:layout_height="fill_parent">
+   			
+ 	 	</de.bht.bachelor.ui.CustomImageView>
+	 	 	  <FrameLayout
+	       	 	android:id="@+id/frameLayout2"
+	         	android:orientation="vertical"
+	    		android:gravity="center"
+	        	android:layout_width="fill_parent"
+	        	android:layout_height="fill_parent"
+	         >
+	 	 	 	 <Button
+			    	android:id="@+id/crop"
+			    	android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="160dip"
+					android:layout_gravity="right"
+					android:background="@drawable/crop_selector"
+			    />
+	 	 	 	  <CheckBox 
+	 	 	 	     android:id="@+id/addFrame"
+	 	 	 	     android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="                 "
+					android:layout_marginLeft="180dip"
+					android:layout_gravity="bottom"
+					android:button="@drawable/add_remove_frame_selector"
+	 	 	 	     />
+	 	 	 	  <Button
+			    	android:id="@+id/frameToWholeImage"
+			    	android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="10dip"
+					android:layout_gravity="right"
+					android:background="@drawable/frame_to_image_selector"
+			    />
+	 	 	 	  </FrameLayout>
+ 	 	 	 <Button
+		    	android:id="@+id/backHistory"
+		    	android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="10dip"
+				android:layout_marginBottom="10dip"
+				android:layout_gravity="bottom"
+				android:background="@drawable/back_selector"
+		    />
+ 	 	 	  <Button
+		    	android:id="@+id/runOrgOcr"
+		    	android:layout_width="wrap_content"
+		    	android:layout_height="wrap_content"
+				android:layout_marginBottom="20dip"
+				android:layout_marginTop="10dip"
+				android:layout_gravity="top"
+				android:background="@drawable/ocr_selector"
+		    />
+ 	 	</FrameLayout>
+</LinearLayout>

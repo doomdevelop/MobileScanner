@@ -1,0 +1,3 @@
+include ':androidOcrUtil'
+include ':androidOCR'
+include ':tesstwo-new'

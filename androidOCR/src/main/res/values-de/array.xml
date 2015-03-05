@@ -1,0 +1,38 @@
+<resources>
+    <string-array name="ttsLanguagesArray">
+        <item>Eine Sprache für Text-zu-Sprache auswählen</item>
+		<item>en</item>
+        <item>de</item>
+    	<item>fr</item>
+    	<item>it</item>
+    	<item>es</item>
+    </string-array>
+
+    <string-array name="ocrLanguagesArray">
+        <item>Eine Sprache für die Texterkennung auswählen</item>
+		<item>en</item>
+        <item>de</item>
+    	<item>fr</item>
+    	<item>it</item>
+    	<item>es</item>
+    	<item>pl</item>
+    </string-array>
+      <string-array name="ttsLanguagesArrayChooseMode">
+        <item>Eine Sprache für Text-zu-Sprache auswählen</item>
+		<item>en</item>
+        <item>de</item>
+    	<item>fr</item>
+    	<item>it</item>
+    	<item>es</item>
+    </string-array>
+
+    <string-array name="ocrLanguagesArrayChooseMode">
+        <item>Eine Sprache für die Texterkennung auswählen</item>
+		<item>en</item>
+        <item>de</item>
+    	<item>fr</item>
+    	<item>it</item>
+    	<item>es</item>
+    	<item>pl</item>
+    </string-array>
+</resources>

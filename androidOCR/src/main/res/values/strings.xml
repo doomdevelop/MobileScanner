@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+ 	<string name="hello">Hello World, AndroidCameraDemoActivity!</string>
+    <string name="app_name">Android OCR</string>
+    <string name="shut">result</string>
+    <string name="camera">This button provides a photo</string>
+    <string name="frameToImage">This button is scaled image frame to image size.</string>
+    <string name="crop">This key cutting picture in picture frame</string>
+    <string name="addFrame">This button makes the screen visible</string>
+    <string name="removeFrame">This button makes the picture frame invisible</string>
+    <string name="back">This key will undo the last operation</string>
+    <string name="runOCR">This button launches OCR</string>
+    <string name="runOCRLive">This button launches OCR mode in video</string>
+    <string name="speak">This button launches voice synthesis, so the found text is enounce</string>
+    <string name="stopTTS">This button stops speech synthesis</string>
+    <string name="rate">This button changes the speed of speech synthesis</string>
+    <string name="flash">This is a setting for the cameras flash. Selectable options are: flash on, flash off, or flash in automatic mode</string>
+	<string name="ocrOnWork">Please wait a moment</string>
+	<string name="downloadDialogText">Loading file: </string>
+	<string name="traineddata_url">http://tesseract-ocr.googlecode.com/files/"</string>
+	<string name="traineddata_ending_name_compress">.traineddata.gz</string>
+	<string name="traineddata_ending_name_uncompress">.traineddata</string>
+	<string name="languageTTS_info_no_language">you did not choose language for Text-To-Speech</string>
+	<string name="languageOCR_info_no_language">you did not choose language for text recognition</string>
+	<string name="deviceLanguageLabel">your device language: </string>
+	<string name="ttsLanguageLabel">your Text-To-Speech language: </string>
+	<string name="ocrLanguageLabel">your text recognition language: </string>
+    <string name="menu_title_menu">menu</string>
+    <string name="menu_title_languages">languages</string>
+    <string name="menu_title_setting">setting</string>
+    <string name="preference_file_key">ocrSheredPref</string>
+
+</resources>

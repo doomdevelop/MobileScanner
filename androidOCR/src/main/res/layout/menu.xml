@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content"
+    	android:orientation="horizontal" >
+
+    	 <TextView
+    	     android:id="@+id/ttsRateTextView"
+    	     android:layout_width="wrap_content"
+    	     android:layout_height="wrap_content"
+    	   android:layout_marginLeft="10dp"
+           android:layout_marginTop="25dp"
+           android:paddingBottom="0px"
+           android:paddingLeft="10px"
+           android:paddingRight="40px"
+    	   android:text="1.0"
+    	   android:textStyle="bold"
+    	   android:gravity="center_horizontal"
+    	   android:inputType="numberDecimal"
+    	      />
+
+        <SeekBar
+              android:id="@+id/ttsRateSeekBar"
+             android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+              android:max="12"
+              android:paddingLeft="40px"
+              android:paddingRight="20px"
+              android:thumb="@drawable/seek_thumb" />
+         
+  </LinearLayout>
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal" 
+       android:paddingTop="20px">
+
+       <Button
+           android:id="@+id/flashButton"
+           android:layout_width="74dp"
+           android:layout_height="68dp"
+           android:layout_marginLeft="10dp"
+           android:layout_marginTop="10dp"
+           android:paddingBottom="0px"
+           android:paddingLeft="10px"
+           android:paddingRight="40px"
+           android:paddingTop="15px" />
+  
+      <SeekBar
+            android:id="@+id/flashSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="2"
+			 android:thumb="@drawable/seek_thumb" 
+			  android:paddingLeft="40px"
+              android:paddingRight="20px"/>
+        
+  </LinearLayout>
+ 
+</LinearLayout>

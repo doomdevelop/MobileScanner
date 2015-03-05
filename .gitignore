@@ -1,0 +1,38 @@
+# built application files
+*.apk
+*.ap_
+
+# files for the dex VM
+*.dex
+
+# Java class files
+*.class
+
+# generated files
+tesstwo-new/bin/
+tesstwo/bin/
+androidOcrUtil/bin/
+androidOCR/bin/
+tesstwo/gen/
+tesstwo-new/gen/
+androidOcrUtil/gen/
+androidOCR/gen/
+
+# Local configuration file (sdk path, etc)
+tesstwo-new/local.properties
+tesstwo/local.properties
+androidOcrUtil/local.properties
+androidOcr/local.properties
+#eclipse files
+#.classpath
+#.project
+
+# OSX files
+.DS_Store
+*.iml
+.idea/
+build/
+.gradle/
+app/build/
+library/build/
+local.properties

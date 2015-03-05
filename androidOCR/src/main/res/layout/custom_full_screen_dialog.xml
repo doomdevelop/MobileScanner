@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:gravity="center"
+    android:padding="5dp"
+    android:background="@android:color/transparent"
+    android:layout_height="match_parent">
+
+    <!--<FrameLayout-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="match_parent"-->
+    <!--android:layout_gravity="center"-->
+
+    <!--android:background="@android:color/transparent">-->
+    <!--android:background="@drawable/assessment_full_screen_dialog_image_frame"-->
+    <ImageView
+        android:layout_gravity="center"
+        android:id="@+id/custom_assessment_dialog_img"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter" />
+    <!--</FrameLayout>-->
+</LinearLayout>

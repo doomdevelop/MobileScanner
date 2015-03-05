@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/backgroundphoto"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:gravity="bottom"
+    >
+
+    <de.bht.bachelor.ui.CustomImageView
+ 	 	    android:id="@+id/picview"
+	   			android:layout_width="fill_parent"
+   			android:layout_height="fill_parent">
+ 	</de.bht.bachelor.ui.CustomImageView>
+</LinearLayout>

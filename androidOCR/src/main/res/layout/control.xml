@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ android:orientation="vertical"
+ android:layout_width="match_parent"
+ android:layout_height="match_parent"
+
+ >
+<!--<Button-->
+<!--android:id="@+id/takepicture"-->
+<!--android:layout_width="wrap_content"-->
+<!--android:layout_height="wrap_content"-->
+<!--android:layout_gravity="right|top"-->
+<!--android:layout_margin="10px"-->
+    <!--android:layout_alignParentRight="true"-->
+    <!--android:layout_alignParentTop="true"-->
+<!--android:background="@drawable/camera_selector">-->
+<!--</Button>-->
+<!--<Button-->
+	<!--android:id="@+id/runOcr"-->
+	<!--android:layout_width="wrap_content"-->
+	<!--android:layout_height="wrap_content"-->
+	<!--android:layout_gravity="left|bottom"-->
+    <!--android:layout_alignParentLeft="true"-->
+    <!--android:layout_alignParentBottom="true"-->
+	<!--android:layout_margin="10px"-->
+
+	<!--android:background="@drawable/ocr_selector">-->
+<!--</Button>-->
+
+
+    <Button
+        android:id="@+id/cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right|top"
+        android:layout_margin="10dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:background="@drawable/cancel_selector"></Button>
+
+    <FrameLayout
+        android:id="@+id/run_ocr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|bottom"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentBottom="true"
+        android:clickable="true"
+        android:focusable="true"
+
+        android:layout_margin="10dp">
+
+        <Button
+            android:id="@+id/camera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:background="@drawable/camera_selector"></Button>
+
+        <Button
+            android:id="@+id/camera_lens"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:background="@drawable/camera_lens_white200px"></Button>
+    </FrameLayout>
+<!--<View-->
+    <!--android:id="@+id/tessTextFrameView"-->
+    <!--android:layout_width="fill_parent"-->
+ 	<!--android:layout_height="fill_parent"-->
+ <!--/>-->
+</RelativeLayout>
+
+<!--
+ android:text=" * Take Picture "
+ -->
+ 

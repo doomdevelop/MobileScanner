@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello">Hello World, AndroidCameraDemoActivity!</string>
+    <string name="app_name">Android OCR</string>
+    <string name="shut">result</string>
+    <string name="camera">Diese Taste stellt ein Photo</string>
+    <string name="frameToImage">Diese Taste skaliert Bildrahmen zu Bildgröße .</string>
+    <string name="crop">Diese Taste schneidet Bild auf Bildrahmen</string>
+    <string name="addFrame">Diese Taste macht den Bildrahmen sichtbar</string>
+    <string name="removeFrame">Diese Taste macht den Bildrahmen unsichtbar</string>
+    <string name="back">Diese Taste macht den letzten Vorgang rückgängig</string>
+    <string name="runOCR">Diese Taste startet OCR</string>
+    <string name="runOCRLive">Diese Taste startet OCR in Video modus</string>
+    <string name="speak">Diese Taste startet Sprachsynthese, damit der gefundene Text ausgeschprochen wird</string>
+    <string name="stopTTS">Diese Taste stopt Sprachsynthese</string>
+    <string name="rate">Diese Taste wechselt Geschwindigkeit der Sprachsynthese</string>
+    <string name="flash">Das ist eine Einstellung für Blitz der Kamera. Wählbare Optionen sind : Blitz an, Blitz aus oder Blitz im automatischen Modus</string>
+	<string name="ocrOnWork">Bitte warten Sie einen kleinen Moment</string>
+	<string name="downloadDialogText">Lädt Datei herunter: </string>
+	<string name="traineddata_url">http://tesseract-ocr.googlecode.com/files/"</string>
+	<string name="traineddata_ending_name_compress">.traineddata.gz</string>
+	<string name="traineddata_ending_name_uncompress">.traineddata</string>
+	<string name="languageTTS_info_no_language">du hast noch keine Sprache ausgewählt für die Texterkennung</string>
+	<string name="languageOCR_info_no_language">du hast noch keine Sprache ausgewählt für die Text-zu-Sprache</string>
+	<string name="deviceLanguage">die Sprache des Gerätes: </string>
+	<string name="ttsLanguageLabel">die Sprache der Texterkennung: </string>
+	<string name="ocrLanguageLabel">die Sprache der Text-zu-Sprache: </string>
+</resources>
