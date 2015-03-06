@@ -111,8 +111,6 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         createHandler();
         super.setResultHandler(resultHandler);
-//		languageManager.checkSetup(this, resultHandler);
-//        new FileManager().prepareFileSystem();
         if (!languageManager.checkTraineddataForCurrentLanguage(this)) {
             String currentIso3 = AppSetting.getInstance().getLanguageManager().getCurrentOcrLanguage();
             Intent intent = new Intent(this, CheckLanguageActivity.class);
