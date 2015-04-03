@@ -1,6 +1,8 @@
 package de.bht.bachelor.camera;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
@@ -12,10 +14,12 @@ import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.PreviewCallback;
 import android.os.AsyncTask;
+import android.os.Debug;
 import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.WindowManager;
@@ -40,7 +44,6 @@ import de.bht.bachelor.helper.CameraFlashState;
 import de.bht.bachelor.helper.ChangeActivityHelper;
 import de.bht.bachelor.helper.MenuSettingHelper;
 import de.bht.bachelor.language.LanguageManager;
-import de.bht.bachelor.manager.OrientationManger;
 import de.bht.bachelor.message.ServiceMessenger;
 import de.bht.bachelor.ocr.OCR;
 import de.bht.bachelor.setting.AppSetting;
@@ -56,7 +59,7 @@ public class Preview implements SurfaceHolder.Callback {
 
     private ServiceMessenger serviceMessenger;
     private Handler resultHandler;
-    private final Context context;
+    private final Activity context;
     // ************************************** sizes ******************************************
     // the frame size , could be different than size of view (surfaceView) witch is displaying every each frame
     // the values are NEVER FLIP !
@@ -113,7 +116,7 @@ public class Preview implements SurfaceHolder.Callback {
     private ImageView imageView;
 
 
-    public Preview(Context context, SurfaceHolder surfaceHolder) {
+    public Preview(Activity context, SurfaceHolder surfaceHolder) {
         this.surfaceHolder = surfaceHolder;
         this.context = context;
     }
@@ -127,6 +130,20 @@ public class Preview implements SurfaceHolder.Callback {
         }
     }
 
+    private int getCameraId(Camera camera) {
+        int numberOfCameras = Camera.getNumberOfCameras();
+
+        // Find the ID of the default camera
+        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+        for (int i = 0; i < numberOfCameras; i++) {
+            Camera.getCameraInfo(i, cameraInfo);
+            if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         // The Surface has been created, acquire the camera and tell it where
@@ -138,7 +155,6 @@ public class Preview implements SurfaceHolder.Callback {
                 closeCamera(this.camera);
             }
             camera = Camera.open();
-
             Log.d(TAG, "seting preview display");
             camera.setPreviewDisplay(holder);
             firstInitVideoCall = true;
@@ -224,21 +240,90 @@ public class Preview implements SurfaceHolder.Callback {
                 // camera.setParameters(params);
                 buffer = this.frameWidth * this.frameHeight * this.previewbpp / 8;
                 Log.d(TAG, "Computed new Buffer: " + buffer);
+                setCameraDisplayOrientation(context, getCameraId(camera), camera);
 
                 camera.setParameters(params);
                 camera.startPreview();
 
                 previewing = true;
-            } catch (IOException e) {
+            } catch (Exception e) {
                 // TODO Auto-generated catch block
                 Log.e(TAG, "Could not start preview", e);
             }
         }
     }
 
-    /*
-     * http://stackoverflow.com/questions/8566008/setting-camera-preview-buffer-size
-     */
+    public OrientationMode getOrientationMode() {
+        return orientationMode;
+    }
+
+    public void setRestoredOrientatiomMode(OrientationMode orientationMode) {
+        Log.d(TAG,"setRestoredOrientatiomMode()..");
+        if(this.orientationMode != null){
+           getRotateByNewOrientationMode(orientationMode);
+        }
+        this.orientationMode = orientationMode;
+    }
+
+    public void setCameraDisplayOrientation(Activity activity, int cameraId, android.hardware.Camera camera) {
+        android.hardware.Camera.CameraInfo info =
+                new android.hardware.Camera.CameraInfo();
+        android.hardware.Camera.getCameraInfo(cameraId, info);
+        int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+        int degrees = 0;
+        int devOrient = context.getResources().getConfiguration().orientation;
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                Log.d(TAG, "ROTATION_0");
+                if (devOrient == Configuration.ORIENTATION_LANDSCAPE) {
+
+                    Log.d(TAG, "devOrient ORIENTATION_LANDSCAPE");
+                    this.orientationMode = OrientationMode.LANDSCAPE;
+                } else {
+                    this.orientationMode = OrientationMode.PORTRAIT;
+                    Log.d(TAG, "devOrient PORTRAIT");
+                    if (w > h) {
+                        int temp = h;
+                        h = w;
+                        w = temp;
+                    }
+                }
+                break;
+            case Surface.ROTATION_90:
+                Log.d(TAG, "ROTATION_90");
+                degrees = 90;
+                if (devOrient == Configuration.ORIENTATION_LANDSCAPE) {
+                    this.orientationMode = OrientationMode.LANDSCAPE;
+                } else {
+                    this.orientationMode = OrientationMode.PORTRAIT;
+                }
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                this.orientationMode = OrientationMode.PORTRAIT;
+                Log.d(TAG, "ROTATION_180");
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                this.orientationMode = OrientationMode.LANDSCAPE;
+                Log.d(TAG, "ROTATION_270");
+                break;
+        }
+        Log.d(TAG, " orientationMode : " + Preview.this.orientationMode.name()+ " display rotation: "+degrees);
+        getRotateByNewOrientationMode(null);
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360;  // compensate the mirror
+        } else {  // back-facing
+            result = (info.orientation - degrees + 360) % 360;
+        }
+
+        camera.setDisplayOrientation(result);
+    }
+
+
     private void setPreviewSize(Parameters cameraParameters) {
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay();
@@ -280,6 +365,7 @@ public class Preview implements SurfaceHolder.Callback {
 
         }
     }
+
 
     private void getPreviewValues(Parameters params) {
         int previewFormat = params.getPreviewFormat(); // retrieve the Previewformat according to your camera
@@ -388,14 +474,15 @@ public class Preview implements SurfaceHolder.Callback {
             if (ocrResultList != null) {
                 ocrResultList.clear();
             }
-            rotate = 0;
-            orientationMode = null;
+//            rotate = 0;
+//            orientationMode = null;
             setControllVariablesToDefault();
         }
     }
 
 
     public void stopCamera() {
+        Log.e(TAG, "stop camera()...");
         synchronized (this) {
             if (camera == null) {
                 return;
@@ -426,10 +513,10 @@ public class Preview implements SurfaceHolder.Callback {
             ocrTacks.clear();
         }
     }
-
-    private void stopVideoCallback() {
-        camera.setPreviewCallbackWithBuffer(null);
-    }
+//
+//    private void stopVideoCallback() {
+//        camera.setPreviewCallbackWithBuffer(null);
+//    }
 
     private AutoFocusCallback myAutoFocusCallback = new AutoFocusCallback() {
 
@@ -497,15 +584,6 @@ public class Preview implements SurfaceHolder.Callback {
             ChangeActivityHelper.getInstance().setOrientationMode(orientationMode);
             serviceMessenger = new ServiceMessenger(resultHandler);
             serviceMessenger.sendMessage(0, 1, ActivityType.PICTURE_VIEW);
-//            final BitmapFactory.Options opts = new BitmapFactory.Options();
-//            opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
-//            Bitmap currentOrgBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, opts);
-//            imageView.setImageBitmap(currentOrgBitmap);
-//            imageView.setVisibility(View.VISIBLE);
-//            Log.d(TAG, "stoping preview....");
-//            camera.stopPreview();
-//            camera.release();
-//            camera = null;
         }
     };
     /**
@@ -518,10 +596,12 @@ public class Preview implements SurfaceHolder.Callback {
 
                 if (data == null) {
                     Log.d(TAG, "Data has value null, return");
+                    camera.addCallbackBuffer(data);
                     return;
                 }
                 if (!freeFrame) {
                     Log.e(TAG, "new task-call is locked, freeFrame : " + freeFrame);
+                    camera.addCallbackBuffer(data);
                     return;
                 }
                 byte[] rotatedData = null;
@@ -549,24 +629,14 @@ public class Preview implements SurfaceHolder.Callback {
                 } else {
                     throw new IllegalArgumentException("Wrong data format from camera. Must be NV21, the current format value is " + imageFormat);
                 }
-                boolean rotate = false;
-                changeOrientation(OrientationManger.getInstance().getCurrentOrientationMode());
-                if (isOrientationPortrait()) {
-                    rotate = true;
-                    Log.d(TAG, "Orientation is Portrait");
-
-                    if (h < w)
-                        onOrientationChanged();
-                } else {
-                    if (h > w)
-                        onOrientationChanged();
-                }
+//                changeOrientation(OrientationManger.getInstance().getCurrentOrientationMode());
                 getPreviewValues(parameters);
 
-                Log.d(TAG, "frame width : " + w + ", hight : " + h);
+                Log.d(TAG, "frame width : " + w + ", hight : " + h + ", ocrResultList.size(): " + ocrResultList.size() + " rotate: " + rotate + " orient mode: " + Preview.this.orientationMode.name());
+
                 if (freeFrame && ocrResultList.size() < 3) {
 
-                    SendFrameToOCRTasc sendFrameToOCRTasc = new SendFrameToOCRTasc(w, h, rotate, Preview.this.rotate, orientationMode);
+                    SendFrameToOCRTasc sendFrameToOCRTasc = new SendFrameToOCRTasc(w, h, Preview.this.rotate, orientationMode);
                     sendFrameToOCRTasc.execute(contrastData != null ? contrastData : data);
                     ocrTacks.add(sendFrameToOCRTasc);
 
@@ -592,15 +662,13 @@ public class Preview implements SurfaceHolder.Callback {
      * getting result with boxes with are add in to the preview.
      */
     private class SendFrameToOCRTasc extends AsyncTask<byte[], Void, Vector<Rect>> {
-        private final boolean mustRotate;
-        private final int rotateValue;
+        private int rotateValue;
         private final OrientationMode om;
-
-        public SendFrameToOCRTasc(int w, int h, final boolean mustRotate, final int rotateValue, final OrientationMode om) {
-            this.mustRotate = mustRotate;
+        private  int w;
+        private  int h;
+        public SendFrameToOCRTasc(int w, int h, final int rotateValue, final OrientationMode om) {
             this.rotateValue = rotateValue;
             this.om = om;
-//            imageView.setVisibility(View.INVISIBLE);
             if (Preview.this.isOrientationPortrait()) {
                 this.w = h;
                 this.h = w;
@@ -609,6 +677,7 @@ public class Preview implements SurfaceHolder.Callback {
                 this.w = w;
                 this.h = h;
             }
+            imageView.setVisibility(View.INVISIBLE);
         }
 
         @Override
@@ -637,44 +706,46 @@ public class Preview implements SurfaceHolder.Callback {
             }
             onStartOCR();
             Bitmap bitmap = null;
-            if (mustRotate) {
-                Log.d(TAG, "will rotate " + rotateValue + " orientation=  " + Preview.this.orientationMode.name() + " w= " + this.w + " h= " + this.h);
+            Log.d(TAG, "will rotate " + rotateValue + " orientation=  " + Preview.this.orientationMode.name() + " w= " + this.w + " h= " + this.h);
+            if (rotateValue != 0) {
+
                 int width = 0;
                 int height = 0;
-                if (rotateValue != 0) {
-                    pix = ocr.convertToPix(data, this.w, this.h);
-                    bitmap = WriteFile.writeBitmap(pix);
-//                    int[] rgb = new int[data.length];
-//                    ImageProcessing.decodeYUV420RGB(rgb, data, this.w, this.h);
-//                    bitmap = Bitmap.createBitmap(rgb,this.w, this.h, Bitmap.Config.ARGB_8888);
-                    width = bitmap.getWidth();
-                    height = bitmap.getHeight();
-                    Log.d(TAG, "bitmap getWidth " + width + " getHeight: " + height);
-                    // Setting pre rotate
-                    Matrix mtx = new Matrix();
-//                    mtx.preRotate(rotateValue);
-                    mtx.postRotate(rotateValue, width / 2, height / 2);
-                    // Rotating Bitmap & convert to ARGB_8888, required by tess
-                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, mtx, false);
-                    bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-                    Log.d(TAG, "bitmap getWidth " + bitmap.getWidth() + " getHeight: " + bitmap.getHeight());
-                }
+
+                pix = ocr.convertToPix(data, this.w, this.h);
+                bitmap = WriteFile.writeBitmap(pix);
+                width = bitmap.getWidth();
+                height = bitmap.getHeight();
+                Log.d(TAG, "bitmap getWidth " + width + " getHeight: " + height);
+                // Setting pre rotate
+                Matrix mtx = new Matrix();
+                mtx.postRotate(rotateValue, width / 2, height / 2);
+                // Rotating Bitmap & convert to ARGB_8888, required by tess
+                bitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, mtx, false);
+                bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                Log.d(TAG, "bitmap getWidth " + bitmap.getWidth() + " getHeight: " + bitmap.getHeight());
 
                 final Bitmap finalBitmap = bitmap;//Bitmap.createBitmap(bitmap, 0, 0, w, h);
-
-//                if (finalBitmap == null) {
-//                    data = arg0[0];
-//                }
+                CameraActivity cameraActivity = (CameraActivity) context;
+//                cameraActivity.runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        imageView.setImageBitmap(finalBitmap);
+//                        imageView.setVisibility(View.VISIBLE);
+//                        imageView.setOnClickListener(new View.OnClickListener() {
+//                            @Override
+//                            public void onClick(View view) {
+//                                imageView.setVisibility(View.GONE);
+//                            }
+//                        });
+//                    }
+//                });
 
                 if (ocr != null && ocr.isApiCreated()) {
                     ocrResult = ocr.runTessWithData2(data, finalBitmap, this.w, this.h, bpp, bpp * this.w);
                 }
             } else {
-//
                 if (ocr != null && ocr.isApiCreated()) {
-//                    if (data == null) {
-//                        data = arg0[0];
-//                    }
                     CameraActivity cameraActivity = (CameraActivity) context;
                     cameraActivity.runOnUiThread(new Runnable() {
                         @Override
@@ -682,8 +753,6 @@ public class Preview implements SurfaceHolder.Callback {
                             imageView.setVisibility(View.GONE);
                         }
                     });
-//                    pix = ocr.convertToPix(data, this.w, this.h);
-//                    bitmap = WriteFile.writeBitmap(pix);
 
                     ocrResult = ocr.runTessWithData2(data, null, this.w, this.h, bpp, bpp * this.w);
                 }
@@ -701,7 +770,6 @@ public class Preview implements SurfaceHolder.Callback {
             if (boxes != null) {
                 Log.d(TAG, "returning " + boxes.size() + " boxes");
             }
-
             return boxes;
         }
 
@@ -717,6 +785,11 @@ public class Preview implements SurfaceHolder.Callback {
                 return;
             }
             Log.d(TAG, "THREAD ID: " + Thread.currentThread().getId());
+            if (this.om == OrientationMode.PORTRAIT || this.om == OrientationMode.PORTRAIT_UPSIDE_DOWN) {
+                int temp = w;
+                this.w = h;
+                this.h = temp;
+            }
             if (characterBoxView == null) {
                 createCharacterBoxView(new Vector<Rect>(boxes), this.w, this.h);
             }
@@ -746,7 +819,6 @@ public class Preview implements SurfaceHolder.Callback {
             }
 
 
-            Log.d(TAG, "THREAD ID: " + Thread.currentThread().getId());
             serviceMessenger = new ServiceMessenger(resultHandler);
             serviceMessenger.sendMessage(0, 3, characterBoxView);// set enable=true to the button
 
@@ -779,34 +851,33 @@ public class Preview implements SurfaceHolder.Callback {
         @Override
         protected void onCancelled() {
             Log.d(TAG, "---- On Cancelled -----");
-            // isLocked = true;
-            // freeFrame = false;
-            // waitForCameraFocus = false;
-        }
 
-        private final int w;
-        private final int h;
+        }
     }
 
     private void getRotateByNewOrientationMode(OrientationMode orientationMode) {
-        if (this.orientationMode == null) {
-            return;
+        Log.d(TAG, "-------- getRotateByNewOrientationMode -------- " );
+        if (orientationMode == null) {
+            switch (this.orientationMode) {
+                case LANDSCAPE_UPSIDE_DOWN:
+                    rotate = 180;
+                    break;
+                case PORTRAIT:
+                    rotate = 90;
+                    break;
+                case PORTRAIT_UPSIDE_DOWN:
+                    rotate = -90;
+                    break;
+                case LANDSCAPE:
+                    rotate = 0;
+            }
+            return ;
         }
-        Log.d(TAG, "---- getRotateByNewOrientationMode ----- new: " + orientationMode.name + ", old: " + this.orientationMode.name + " rotate: " + rotate);
+        Log.d(TAG, "getRotateByNewOrientationMode new: " + orientationMode.name + ", old: " + this.orientationMode.name + " rotate: " + rotate);
         if (this.orientationMode == orientationMode) {
             return;
         }
-//        switch (this.orientationMode) {
-//            case LANDSCAPE_UPSIDE_DOWN:
-//                rotate = 180;
-//                break;
-//            case PORTRAIT:
-//                rotate = -90;
-//                break;
-//            case PORTRAIT_UPSIDE_DOWN:
-//                rotate = 90;
-//                break;
-//        }
+
 
         switch (orientationMode) {
             case LANDSCAPE:

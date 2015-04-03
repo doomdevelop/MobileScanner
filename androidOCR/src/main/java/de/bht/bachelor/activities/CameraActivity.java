@@ -5,12 +5,9 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.os.Bundle;
@@ -60,7 +57,7 @@ import de.bht.bachelor.ui.CharacterBoxView;
  *
  * @author Andrzej Kozlowski
  */
-public class CameraActivity extends MenuCreatorActivity implements OnClickListener, SensorEventListener {
+public class CameraActivity extends MenuCreatorActivity implements OnClickListener {
 
     private Handler resultHandler;
     private SurfaceView surfaceView;
@@ -95,6 +92,8 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     private volatile boolean isPreviewInitialized = false;
 
     private AnimationManager animationManager;
+    private String orientationModeName = null;
+    private static final String ORIENTATION_MODE = "orientation_mode";
 
 
     @Override
@@ -104,11 +103,9 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
 
         Log.d(TAG, "onCreate()....");
         Log.d(TAG, "THREAD ID: " + Thread.currentThread().getId());
-        if (savedInstanceState != null && !savedInstanceState.isEmpty()) {
-            restoreInstanceState(savedInstanceState);
-        }
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
+//        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+//        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         createHandler();
         super.setResultHandler(resultHandler);
         if (!languageManager.checkTraineddataForCurrentLanguage(this)) {
@@ -123,10 +120,12 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         getWindow().setFormat(PixelFormat.UNKNOWN);
         // Create our Preview view and set it as the content of our activity.
         animationManager = new AnimationManager(this);
-
         initSurfaceHolder();
         initComponents();
         initCameraPreview();
+        if (savedInstanceState != null && !savedInstanceState.isEmpty()) {
+            restoreInstanceState(savedInstanceState);
+        }
     }
 
     private void onDismissDialog(int id) {
@@ -261,7 +260,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
             if(mPreview.getCamera() != null) {
                 mPreview.getCamera().setPreviewCallback(null);
             }
-            surfaceHolder.removeCallback(mPreview);
+//            surfaceHolder.removeCallback(mPreview);
             isPreviewInitialized = false;
             mPreview.stopCamera();
 //            mPreview.resetPreview();
@@ -270,6 +269,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     }
 
     private void initSurfaceHolder() {
+        Log.d(TAG,"initSurfaceHolder()....");
         surfaceView = (SurfaceView) findViewById(R.id.camerapreview);
         surfaceHolder = surfaceView.getHolder();
 
@@ -322,7 +322,9 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
             }
         } else {
             if (view.getId() == R.id.cancel) {
-
+                if(mPreview.getCamera() != null){
+                    mPreview.getCamera().cancelAutoFocus();
+                }
                 mPreview.resetPreview();
                 mPreview.cancelAllOcrTasks();
 //                mPreview.clearAndCloseApi();
@@ -451,55 +453,6 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
 
     }
 
-    @Override
-    public void onAccuracyChanged(Sensor arg0, int arg1) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        float a,p,r;
-        float[] gravSensor;
-        switch(event.sensor.getType()){
-            case Sensor.TYPE_ORIENTATION:
-                boolean workWithOrientationSensor = false;
-
-                float[] gravSensorVals = new float[event.values.length];
-
-                System.arraycopy(event.values, 0, gravSensorVals, 0, 3);
-                lowPass(gravSensorVals, gravSensorVals);
-                float azimuth = gravSensorVals[0];
-                float pitch = gravSensorVals[1];
-                float roll = gravSensorVals[2];
-                OrientationMode om = OrientationManger.getInstance().calculateOrientationWithSensor(gravSensorVals);
-                if (om != null) {
-                    this.mPreview.changeOrientation(om);
-                } else {
-                    Log.e(TAG, "------ onSensorChanged() EVENT  OrientationMode is NULL ");
-                }
-                Log.d(TAG, "onSensorChanged() TYPE_ORIENTATION azimuth: " + azimuth + ", pitch: " + pitch + ", roll: " + roll);
-
-                break;
-            case Sensor.TYPE_MAGNETIC_FIELD :
-              gravSensor = new float[event.values.length];
-                System.arraycopy(event.values, 0, gravSensor, 0, 3);
-                 a = gravSensor[0];
-                 p = gravSensor[1];
-                 r = gravSensor[2];
-                Log.d(TAG, "onSensorChanged() TYPE_MAGNETIC_FIELD azimuth: " + a + ", pitch: " + p + ", roll: " + r);
-            case Sensor.TYPE_ACCELEROMETER :
-                 gravSensor = new float[event.values.length];
-                System.arraycopy(event.values, 0, gravSensor, 0, 3);
-                 a = gravSensor[0];
-                 p = gravSensor[1];
-                 r = gravSensor[2];
-                Log.d(TAG, "onSensorChanged() TYPE_ACCELEROMETER azimuth: " + a + ", pitch: " + p + ", roll: " + r);
-
-
-        }
-
-    }
 
 
     protected float[] lowPass(float[] input, float[] output) {
@@ -514,48 +467,68 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     public void onConfigurationChanged(Configuration newConfig) {
         Log.d(TAG, "onConfigurationChanged()  ");
         super.onConfigurationChanged(newConfig);
-//        changeOrientation(newConfig);
+        OrientationMode om = null;
+        switch (newConfig.orientation){
+            case Configuration.ORIENTATION_PORTRAIT:
+                om = OrientationMode.PORTRAIT;
+                break;
+            case Configuration.ORIENTATION_LANDSCAPE:
+                om = OrientationMode.LANDSCAPE;
+                break;
+//            case Configuration.ORIENTATION_:
+//                om = OrientationMode.PORTRAIT;
+//                break;
+//            case Configuration.ORIENTATION_PORTRAIT:
+//                om = OrientationMode.PORTRAIT;
+//                break;
+        }
+//        CameraActivity.this.mPreview.changeOrientation(om);
+//        changeOrientation(newConfig);s
     }
 
     @Override
     public void onResume() {
         Log.d(TAG, "onResume..................");
         super.onResume();
+//        initSurfaceHolder();
+//        initComponents();
+//        initCameraPreview();
+//        surfaceHolder.addCallback(mPreview);
         if(!isPreviewInitialized) {
-            surfaceHolder.addCallback(mPreview);
+//            surfaceHolder.addCallback(mPreview);
             mPreview.cleanOcrResultList();
             mPreview.resetPreview();
         }
 
-        myOrientationEventListener
-                = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
-
-            @Override
-            public void onOrientationChanged(int arg0) {
-//                Log.e(TAG, "------ onSensorChanged() onOrientationChanged() ------ " + arg0);
-                final float x = arg0;
+//        myOrientationEventListener
+//                = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
+//
+//            @Override
+//            public void onOrientationChanged(int arg0) {
+////                Log.e(TAG, "------ onSensorChanged() onOrientationChanged() ------ " + arg0);
+//                final float x = arg0;
 //			Log.d(TAG, "onSensorChanged: " + ", x: " + x);
-                OrientationMode om = OrientationManger.getInstance().calculateOrientation(x);
-                if (om != null) {
-                    CameraActivity.this.mPreview.changeOrientation(om);
-                } else {
-                    Log.e(TAG, "------ onSensorChanged()  OrientationMode is NULL ");
-                }
-
-            }
-        };
-        if (myOrientationEventListener.canDetectOrientation()) {
-
-            myOrientationEventListener.enable();
-        }
+//                OrientationMode om = OrientationManger.getInstance().calculateOrientation(x);
+//                if (om != null) {
+//                    CameraActivity.this.mPreview.changeOrientation(om);
+//                } else {
+//                    Log.e(TAG, "------ onSensorChanged()  OrientationMode is NULL ");
+//                }
+//
+//            }
+//        };
+//        if (myOrientationEventListener.canDetectOrientation()) {
+//
+//            myOrientationEventListener.enable();
+//        }
 
         this.runOCR.setEnabled(true);
         this.cancelBtn.setEnabled(false);
         this.cameraLens.setEnabled(true);
 
         toolTipsToSpeech();
-        initSensorOrientation();
-        initAccelerometerMagneticField();
+//        initSensorOrientation();
+//        initAccelerometerMagneticField();
         ImageView img = (ImageView) findViewById(R.id.camera_preview_img);
         img.setVisibility(View.GONE);
     }
@@ -571,8 +544,8 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         if (sensors.size() > 0) {
             sensorMag = sensors.get(0);
         }
-        mySensorManager.registerListener(this, sensorGrav, SensorManager.SENSOR_DELAY_NORMAL);
-        mySensorManager.registerListener(this, sensorMag, SensorManager.SENSOR_DELAY_NORMAL);
+//        mySensorManager.registerListener(this, sensorGrav, SensorManager.SENSOR_DELAY_NORMAL);
+//        mySensorManager.registerListener(this, sensorMag, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @Override
@@ -598,7 +571,6 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
 
                 }
             }
-            stopAndClosePreview();
             isBackPressed = false;
 
         }
@@ -624,11 +596,11 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
             this.mySensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
         }
-        List<Sensor> mySensors = this.mySensorManager.getSensorList(Sensor.TYPE_ORIENTATION);
-        if (mySensors.size() > 0) {
-            mySensorManager.registerListener(this, mySensors.get(0), SensorManager.SENSOR_DELAY_NORMAL);
-            sensorrunning = true;
-        }
+//        List<Sensor> mySensors = this.mySensorManager.getSensorList(Sensor.TYPE_ORIENTATION);
+//        if (mySensors.size() > 0) {
+//            mySensorManager.registerListener(this, mySensors.get(0), SensorManager.SENSOR_DELAY_NORMAL);
+//            sensorrunning = true;
+//        }
 
     }
 
@@ -637,21 +609,21 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         if (mySensorManager == null) {
             this.mySensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         }
-        if (sensorrunning) {
-            mySensorManager.unregisterListener(this);
-            sensorrunning = false;
-        }
+//        if (sensorrunning) {
+//            mySensorManager.unregisterListener(this);
+//            sensorrunning = false;
+//        }
     }
 
     @Override
     public void onPause() {
         Log.d(TAG, "onPause().....");
         super.onPause();
-        if (sensorGrav != null && sensorMag != null) {
-            mySensorManager.unregisterListener(this, sensorGrav);
-            mySensorManager.unregisterListener(this, sensorMag);
-
-        }
+//        if (sensorGrav != null && sensorMag != null) {
+//            mySensorManager.unregisterListener(this, sensorGrav);
+//            mySensorManager.unregisterListener(this, sensorMag);
+//
+//        }
         if (myOrientationEventListener != null) {
             myOrientationEventListener.disable();
         }
@@ -659,6 +631,8 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
             unregisterListener();
             OrientationManger.getInstance().reset();
         }
+        stopAndClosePreview();
+
 
     }
 
@@ -670,7 +644,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
 
         if (!((PowerManager) getSystemService(Context.POWER_SERVICE)).isScreenOn()) {
             Log.d(TAG, "----------------- the Screen is not On------------------");
-            TTS.getInstance().shutdown();
+//            TTS.getInstance().shutdown();
             isScreenOn = false;
         }
         // Save UI state changes to the savedInstanceState.
@@ -681,6 +655,10 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         savedInstanceState.putBoolean("componentsVisibe", componentsVisibe);
         savedInstanceState.putBoolean("isScreenOn", isScreenOn);
         savedInstanceState.putBoolean("isReceiveRegistered", isReceiveRegistered);
+        OrientationMode orientationMode = mPreview.getOrientationMode();
+        if(orientationMode != null) {
+            savedInstanceState.putString(ORIENTATION_MODE, orientationMode.name());
+        }
     }
 
     private void restoreInstanceState(Bundle savedInstanceState) {
@@ -693,9 +671,13 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         isReceiveRegistered = savedInstanceState.getBoolean("isReceiveRegistered");
         if (!isScreenOn) {
             Log.d(TAG, "----------------- the Screen is not On------------------");
-            TTS.getInstance().shutdown();
-            isScreenOn = false;
-            setLanguageToTTS();
+//            TTS.getInstance().shutdown();
+//            isScreenOn = false;
+//            setLanguageToTTS();
+        }
+        if(savedInstanceState.containsKey(ORIENTATION_MODE) && savedInstanceState.getString(ORIENTATION_MODE) != null ) {
+
+            mPreview.setRestoredOrientatiomMode(OrientationManger.getOrientationModeByName(savedInstanceState.getString(ORIENTATION_MODE)));
         }
     }
 

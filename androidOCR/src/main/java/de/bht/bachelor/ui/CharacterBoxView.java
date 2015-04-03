@@ -162,11 +162,11 @@ public class CharacterBoxView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.save();
-
+        rotate = 0;
         Log.d(TAG, "canvas size: w= " + canvas.getWidth() + ", h= " + canvas.getHeight() + ", propH =" + propH );
         if (rotate !=0) {
 //            positions of the character boxes are wrong, translate and rotate back canvas to fit boxes in to the display
-             rotate *=-1;//if image passed in to ocr has been rotated 90 , we must rotate back -90
+//             rotate *=-1;//if image passed in to ocr has been rotated 90 , we must rotate back -90
 
             Matrix mtx = new Matrix();
             mtx.postRotate(rotate, frameHeight / 2, frameHeight / 2);

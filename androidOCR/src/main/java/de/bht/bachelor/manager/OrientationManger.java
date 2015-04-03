@@ -233,6 +233,20 @@ public class OrientationManger {
         createMap();
     }
 
+    public static OrientationMode getOrientationModeByName(String orientationModeName) {
+        OrientationMode orientationMode = null;
+        if (orientationModeName.equals(OrientationMode.LANDSCAPE.name())) {
+            orientationMode = OrientationMode.LANDSCAPE;
+        } else if (orientationModeName.equals(OrientationMode.PORTRAIT.name())) {
+            orientationMode = OrientationMode.PORTRAIT;
+        } else if (orientationModeName.equals(OrientationMode.LANDSCAPE_UPSIDE_DOWN.name())) {
+            orientationMode = OrientationMode.LANDSCAPE_UPSIDE_DOWN;
+        } else if (orientationModeName.equals(OrientationMode.PORTRAIT_UPSIDE_DOWN.name())) {
+            orientationMode = OrientationMode.PORTRAIT_UPSIDE_DOWN;
+        }
+        return orientationMode;
+    }
+
     public OrientationMode getCurrentOrientationMode() {
         return currentOrientationMode;
     }
