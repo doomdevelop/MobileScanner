@@ -16,6 +16,7 @@ public class Preferences {
     private static final String PREFERENCES_NAME = "OcrPreferences";
     public static final String TTS_CHECKED_KEY = "TTS_CHECKED_KEY";
     public static final String IMAGE_DATA = "IMAGE_DATA";
+    public static final String TTS_SPINER_POSITION = "TTS_SPINER_POSITION";
     public static Preferences createInstance(Context context){
         if(instance != null) throw (new IllegalStateException("Preferences already initialized!"));
         instance = new Preferences(context);
@@ -37,13 +38,13 @@ public class Preferences {
     public void putArrayData(String key, byte[] array){
         SharedPreferences.Editor editor = sharedPreferences.edit();
         String converted = Base64.encodeToString(array, Base64.DEFAULT);
-        editor.putString(key,converted);
+        editor.putString(key, converted);
         editor.commit();
     }
 
     public byte[] getArrayData(String key){
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        String dataStr = sharedPreferences.getString(key,null);
+        String dataStr = sharedPreferences.getString(key, null);
         if(dataStr == null){
             return null;
         }
@@ -51,6 +52,15 @@ public class Preferences {
         return array;
     }
 
+    public void putInt( String key,int value){
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(key,value);
+        editor.commit();
+    }
+
+    public int getInt(String key){
+        return sharedPreferences.getInt( key,-1);
+    }
     public boolean getBoolean(String key,boolean defoultValue){
         return sharedPreferences.getBoolean(key,defoultValue);
     }

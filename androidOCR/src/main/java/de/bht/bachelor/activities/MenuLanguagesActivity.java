@@ -4,17 +4,22 @@ import java.io.File;
 import java.util.Locale;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
@@ -24,10 +29,13 @@ import android.widget.Toast;
 import de.beutch.bachelorwork.util.file.Path;
 import de.bht.bachelor.R;
 import de.bht.bachelor.beans.OnLanguageChangeBean;
+import de.bht.bachelor.beans.TtsEngine;
+import de.bht.bachelor.exception.LanguageNotSupportedException;
 import de.bht.bachelor.file.FileManager;
 import de.bht.bachelor.helper.ChangeActivityHelper;
 import de.bht.bachelor.helper.NetworkHelper;
 import de.bht.bachelor.language.LanguageManager;
+import de.bht.bachelor.manager.Preferences;
 import de.bht.bachelor.setting.AppSetting;
 import de.bht.bachelor.tasks.DownloadOcrTraineddata;
 import de.bht.bachelor.tts.TTS;
@@ -40,7 +48,7 @@ public class MenuLanguagesActivity extends Activity implements OnItemSelectedLis
     private Vibrator vibrator;
     private static final int VIBRATE_DURATION = 35;
     private Spinner ttsSpinner;
-    private ArrayAdapter<CharSequence> ttsAdapter;
+    private ArrayAdapter<String> ttsAdapter;
     private TextView ttsLanguageTextView;
     private TextView ocrLanguageTextView;
     private Spinner ocrSpinner;
@@ -55,6 +63,10 @@ public class MenuLanguagesActivity extends Activity implements OnItemSelectedLis
     private TextView deviceLanguageTextView;
     private int chooseTtsLanguageMode = -1;
     private int chooseOcrLanguageMode = -1;
+	private static final int DIALOG_TTS_LANGUAGE_NOT_SUPPORTED = 1;
+	private static  int CHECK_TTS_DATA_REQUEST_CODE = 10;
+
+	private  TextToSpeech tts;
 
     private ColorStateList ttsTextViewBakgroundColor = null;
 	@Override
@@ -63,6 +75,7 @@ public class MenuLanguagesActivity extends Activity implements OnItemSelectedLis
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "onCreate().....");
 		setContentView(R.layout.languages);
+		languageManager = AppSetting.getInstance().getLanguageManager();
 		// createHandler();
 		readIntentExtra();
 		initTtsSpinerAdapter();
@@ -83,14 +96,19 @@ public class MenuLanguagesActivity extends Activity implements OnItemSelectedLis
 		ttsTextViewBakgroundColor = ttsLanguageTextView.getTextColors();
 
 //		try {
-			languageManager = AppSetting.getInstance().getLanguageManager();
+
 //		} catch (NullPointerException ex) {
 //			AppSetting.getInstance().initLanguageMenager(this);
 //			languageManager = AppSetting.getInstance().getLanguageManager();
 //		}
-
+		int ttsSpinnerPosition = Preferences.getInstance().getInt(Preferences.TTS_SPINER_POSITION);
+		if(ttsSpinnerPosition ==-1){
+			ttsSpinnerPosition = languageManager.getTtsSpinnerposition();
+		}else {
+			languageManager.setTtsSpinnerPosition(ttsSpinnerPosition);
+		}
 		ocrSpinner.setSelection(languageManager.getOcrSpinnerPosition());
-		ttsSpinner.setSelection(languageManager.getTtsSpinnerposition());
+		ttsSpinner.setSelection(ttsSpinnerPosition);
 
 		updateLanguagetextView();
 	}
@@ -130,10 +148,12 @@ public class MenuLanguagesActivity extends Activity implements OnItemSelectedLis
 
 	private void initTtsSpinerAdapter() {
 
-		if (chooseTtsLanguageMode == LanguageManager.CHOOSE_TTS_LANGUAGE_MODE)
-			ttsAdapter = ArrayAdapter.createFromResource(this, R.array.ttsLanguagesArrayChooseMode, android.R.layout.simple_spinner_item);
-		else
-			ttsAdapter = ArrayAdapter.createFromResource(this, R.array.ttsLanguagesArray, android.R.layout.simple_spinner_item);
+//		if (chooseTtsLanguageMode == LanguageManager.CHOOSE_TTS_LANGUAGE_MODE)
+//			ttsAdapter = ArrayAdapter.createFromResource(this, R.array.ttsLanguagesArrayChooseMode, android.R.layout.simple_spinner_item);
+//		else
+//			ttsAdapter = ArrayAdapter.createFromResource(this, R.array.ttsLanguagesArray, android.R.layout.simple_spinner_item);
+
+		ttsAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,languageManager.getTtsLanguagesListISO2ToDisplay());
 	}
 
 	private void initTtsSpinner() {
@@ -152,29 +172,49 @@ public class MenuLanguagesActivity extends Activity implements OnItemSelectedLis
 	}
 
 	// ******************************************** Language *******************************************************
+
+	private void onNewTtsLanguage(final int position, final boolean callAfrerCheckTtsData){
+		final Locale l = languageManager.getTtsLanguagesListISO2().get(position);//adapter.getItemAtPosition(position).toString();
+		if (!l.getLanguage().equals(languageManager.getCurrentTtsLanguage().getLanguage())) {
+			Log.d(TAG, "Old TTS language: " + languageManager.getCurrentTtsLanguage().getLanguage() + ". New one: " + l);
+			if (chooseTtsLanguageMode == LanguageManager.CHOOSE_TTS_LANGUAGE_MODE) {
+				ttsLanguageTextView.setTextColor(getResources().getColor((R.color.errorColor)));
+			}
+			this.tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+				@Override
+				public void onInit(int i) {
+					if (i == TextToSpeech.SUCCESS) {
+						Locale locale =l;
+						try {
+							TTS.getInstance().init(tts, locale);
+							languageManager.setTtsSpinnerPosition(position);
+							languageManager.setCurrentTtsLanguage(locale);
+							ttsLanguageTextView.setText(locale.getDisplayLanguage());
+							Preferences.getInstance().putInt(Preferences.TTS_SPINER_POSITION, position);
+						} catch (LanguageNotSupportedException e) {
+							if(!callAfrerCheckTtsData) {
+								Log.e(TAG, "Could not inti TTS with language: " + AppSetting.getInstance().getLanguageManager().getCurrentTtsLanguage());
+								CHECK_TTS_DATA_REQUEST_CODE = position;
+								confirmDialog();
+							}
+						}
+					} else if (i == TextToSpeech.ERROR) {
+						confirmDialog();
+					}
+				}
+			});
+		}
+	}
 	@Override
-	public void onItemSelected(AdapterView<?> adapter, View view, int position, long id) {
+	public void onItemSelected(AdapterView<?> adapter, View view, final int position, long id) {
 		Log.d(TAG, "onItemSelected().....");
 		String iso3;
 		Locale locale;
-		String l = adapter.getItemAtPosition(position).toString();
 
 		if (adapter == ttsSpinner) {
-			if (!l.equals(languageManager.getCurrentTtsLanguage().getLanguage())) {
-				Log.d(TAG, "Old TTS language: " + languageManager.getCurrentTtsLanguage().getLanguage() + ". New one: " + l);
-				if (chooseTtsLanguageMode == LanguageManager.CHOOSE_TTS_LANGUAGE_MODE) {
-					ttsLanguageTextView.setTextColor(getResources().getColor((R.color.errorColor)));
-				}
-
-				locale = new Locale(l, l.toUpperCase());
-				languageManager.setCurrentTtsLanguage(locale);
-				ttsLanguageTextView.setText(locale.getDisplayLanguage());
-
-				TTS.getInstance().setLanguage(locale);
-				languageManager.setTtsSpinnerPosition(position);
-				Log.d(TAG, "tts language " + l + ", " + locale.getDisplayLanguage());
-			}
+			onNewTtsLanguage(position,false);
 		} else if (adapter == ocrSpinner) {
+			final String l = languageManager.getOcrLanguagesListISO2().get(position);//adapter.getItemAtPosition(position).toString();
 			iso3 = languageManager.iso2LanguageCodeToIso3LanguageCode(l);
 			if (!iso3.equals(languageManager.getCurrentOcrLanguage())) {
 				locale = new Locale(l);
@@ -193,6 +233,70 @@ public class MenuLanguagesActivity extends Activity implements OnItemSelectedLis
 		}
 		updateLanguagetextView();
 	}
+	private void startInstallTTSDataIntent() {
+		Log.d(TAG, "startInstallTTSDataIntent");
+		Intent installIntent = new Intent();
+		installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+		startActivityForResult(installIntent, CHECK_TTS_DATA_REQUEST_CODE);
+	}
+	private void confirmDialog(){
+		AlertDialog.Builder d = new AlertDialog.Builder(this);
+		d.setTitle("Install recommeded speech engine?");
+		d.setMessage("Your device isn't using the recommended speech engine. Do you wish to install it?");
+
+		d.setPositiveButton("Yes", new android.content.DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int arg1) {
+				startInstallTTSDataIntent();
+			}
+		});
+		d.setNegativeButton("No, later", new android.content.DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int arg1) {
+
+
+				dialog.dismiss();
+			}
+		});
+		d.show();
+	}
+
+	private void startTTSinstallDataIntent(){
+		Intent installIntent = new Intent();
+		installIntent.setAction(
+				TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+		startActivity(installIntent);
+	}
+
+	private Dialog createDialog(int id, String message) {
+		switch (id) {
+			case DIALOG_TTS_LANGUAGE_NOT_SUPPORTED:
+			final	AlertDialog.Builder aleBuilder = new AlertDialog.Builder(
+						this);
+				aleBuilder.setTitle("TTS language error");
+
+				aleBuilder.setMessage(message)
+						.setCancelable(false)
+						.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								// if this button is clicked, close
+								// current activity
+								dialog.dismiss();
+							}
+						});
+
+				Dialog dialog = aleBuilder.show();
+				Window window = dialog.getWindow();
+				window.setLayout(500, 500);
+
+				window.setGravity(Gravity.BOTTOM);
+
+				return dialog;
+		}
+		return super.onCreateDialog(id);
+
+	}
+
 
 	private void onChooseTtsLanguageMode() {
 		chooseTtsLanguageMode = -1;
@@ -311,6 +415,15 @@ public class MenuLanguagesActivity extends Activity implements OnItemSelectedLis
 	protected void onDestroy() {
 		Log.d(TAG, "onDestroy()................");
 		super.onDestroy();
+
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		Log.d(TAG, "onPause()................");
+		TTS.getInstance().shutdown();
+
 	}
 
 	@Override
@@ -345,4 +458,13 @@ public class MenuLanguagesActivity extends Activity implements OnItemSelectedLis
 		this.downloadOcrTessdata = downloadOcrTessdata;
 	}
 
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if(requestCode == CHECK_TTS_DATA_REQUEST_CODE){
+			onNewTtsLanguage(CHECK_TTS_DATA_REQUEST_CODE,true);
+			Log.d(TAG, "MY_DATA_INSTALL_CODE : result : " + resultCode);
+
+		}
+	}
 }

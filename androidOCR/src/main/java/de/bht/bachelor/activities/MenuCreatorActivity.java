@@ -2,7 +2,6 @@ package de.bht.bachelor.activities;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
@@ -19,9 +18,9 @@ import android.widget.Toast;
 import java.util.Locale;
 
 import de.bht.bachelor.R;
+import de.bht.bachelor.exception.LanguageNotSupportedException;
 import de.bht.bachelor.helper.ChangeActivityHelper;
 import de.bht.bachelor.language.LanguageManager;
-import de.bht.bachelor.manager.OrientationManger;
 import de.bht.bachelor.manager.Preferences;
 import de.bht.bachelor.setting.AppSetting;
 import de.bht.bachelor.tts.TTS;
@@ -54,6 +53,8 @@ public class MenuCreatorActivity extends FragmentActivity implements OnInitListe
     protected boolean isBackPressed = false;
     private OcrResultActivity.OnCheckedTTS onCheckedTTS;
 
+    private TextToSpeech tts;
+
     public void setOnTtsInitCallback(OnTtsInitCallback onTtsInitCallback) {
         this.onTtsInitCallback = onTtsInitCallback;
     }
@@ -71,11 +72,20 @@ public class MenuCreatorActivity extends FragmentActivity implements OnInitListe
 
         vibrator = (Vibrator) getBaseContext().getSystemService(Context.VIBRATOR_SERVICE);
         // tts
-        testTTSFlags();
+//        createTTS();
+
+    }
+
+    protected void createTTS() {
+
         boolean isChecked = Preferences.getInstance().getBoolean(Preferences.TTS_CHECKED_KEY, false);
         TTS.getInstance().setApiChecked(isChecked);
-
-        startCheckTTS();
+        testTTSFlags();
+        if (!isChecked) {
+            startCheckTTS();
+        } else {
+            initTTS();
+        }
         if (TTS.getInstance().isInitialized()) {
             Log.d(TAG, "---------------TTS is initialized yet---------");
         } else {
@@ -95,20 +105,32 @@ public class MenuCreatorActivity extends FragmentActivity implements OnInitListe
         if (resultHandler != null)
             TTS.getInstance().setHandler(resultHandler);
         if (!TTS.getInstance().isInitialized()) {
-            TTS.getInstance().init(new TextToSpeech(this, this), AppSetting.getInstance().getLanguageManager().getCurrentTtsLanguage());
+//            try {
+            this.tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+                @Override
+                public void onInit(int i) {
+                    if (i == TextToSpeech.SUCCESS) {
+
+                        try {
+                            TTS.getInstance().init(tts, languageManager.getCurrentTtsLanguage());
+                        } catch (LanguageNotSupportedException e) {
+                            Log.e(TAG, "Could not inti TTS with language: " + AppSetting.getInstance().getLanguageManager().getCurrentTtsLanguage());
+                        }
+
+                    } else if (i == TextToSpeech.ERROR) {
+//                            confirmDialog();
+                    }
+                }
+            });
+
+//
+//                TTS.getInstance().init(new TextToSpeech(this, this), AppSetting.getInstance().getLanguageManager().getCurrentTtsLanguage());
+//            } catch (LanguageNotSupportedException e) {
+//               Log.e(TAG,"Could not inti TTS with language: "+AppSetting.getInstance().getLanguageManager().getCurrentTtsLanguage());
+//            }
         }
     }
 
-    public void setLanguageToTTS() {
-        Log.d(TAG, "setLanguageToTTS().......");
-        if (languageManager == null) {
-            languageManager = AppSetting.getInstance().getLanguageManager();
-        }
-        if (languageManager != null) {
-            Locale loc = languageManager.getCurrentTtsLanguage();
-            TTS.getInstance().setLanguage(loc);
-        }
-    }
 
     private void startCheckTTS() {
         Log.d(TAG, "starting new activity to Check TTS");
@@ -141,7 +163,13 @@ public class MenuCreatorActivity extends FragmentActivity implements OnInitListe
                 }
                 Locale loc = languageManager.getCurrentTtsLanguage();
 
-                TTS.getInstance().setLanguage(loc);
+                try {
+                    TTS.getInstance().setLanguage(loc);
+                } catch (LanguageNotSupportedException e) {
+                    e.printStackTrace();
+
+                    startMenuLanguageActivityInChooseMode();
+                }
 
                 Locale locTTS = TTS.getInstance().getCurrentEngineLanguage();
 
@@ -264,7 +292,11 @@ public class MenuCreatorActivity extends FragmentActivity implements OnInitListe
 
     private void setLanguage(Locale locale) {
 //		try {
-        TTS.getInstance().setLanguage(locale);
+        try {
+            TTS.getInstance().setLanguage(locale);
+        } catch (LanguageNotSupportedException e) {
+            e.printStackTrace();
+        }
 //		} catch (NullPointerException ex) {
 //			AppSetting.getInstance().initLanguageMenager(this);
 //			TTS.getInstance().setLanguage(locale);
@@ -306,7 +338,11 @@ public class MenuCreatorActivity extends FragmentActivity implements OnInitListe
     private void setLanguageBack() {
         Log.d(TAG, "setLanguageBack().......");
         if (hasDifferentDeviceLocale) {
-            TTS.getInstance().setLanguage(languageManager.getCurrentTtsLanguage());
+            try {
+                TTS.getInstance().setLanguage(languageManager.getCurrentTtsLanguage());
+            } catch (LanguageNotSupportedException e) {
+                e.printStackTrace();
+            }
             hasDifferentDeviceLocale = false;
         }
     }
@@ -318,6 +354,7 @@ public class MenuCreatorActivity extends FragmentActivity implements OnInitListe
     @Override
     protected void onResume() {
         super.onResume();
+        createTTS();
         if (this.languageManager == null) {
 //            try {
             languageManager = AppSetting.getInstance().getLanguageManager();
@@ -391,7 +428,7 @@ public class MenuCreatorActivity extends FragmentActivity implements OnInitListe
         Log.d(TAG, "onDestroy()........");
         super.onDestroy();
 //		if (ChangeActivityHelper.getInstance().isOnMainScreen()) {
-			/*
+            /*
 			 * During first init by main Activity the destroy() and create() is calling more than ones,
 			 * if the tts after initialisation will be not shutdown before activity destroy,
 			 * the app will get a problem of ServiceConnectionLeaked :
@@ -407,7 +444,7 @@ public class MenuCreatorActivity extends FragmentActivity implements OnInitListe
     public void onPause() {
         Log.d(TAG, "onPause()........");
         super.onPause();
-//        TTS.getInstance().shutdown();
+        TTS.getInstance().shutdown();
 
     }
 

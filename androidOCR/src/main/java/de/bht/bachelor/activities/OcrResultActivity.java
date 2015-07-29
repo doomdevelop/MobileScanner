@@ -96,7 +96,7 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
 				try {
 
 					getVibrator().vibrate(VIBRATE_DURATION);
-					onDifferentDeviceLanguage();
+//					onDifferentDeviceLanguage();
 					TTS.getInstance().speak(getString(R.string.speak), false);
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
@@ -137,6 +137,7 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
             }                                                                                                                                           
         }
 		createHandler();
+
 	}
     public void showFullScreenDialog(Bitmap img, int resId) {
         final Dialog dialog = new Dialog(this, R.style.DialogDimTheme);
@@ -345,6 +346,7 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
 
 		textView.setText(ocrResultText);
 		buttonSpeak.setEnabled(true);
+//		createTTS();
         if (firstCall && TTS.getInstance().isInitialized()){
             initLocalTTS();
         }

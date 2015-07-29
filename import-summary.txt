@@ -10,24 +10,23 @@ so manually move them:
 * .gitignore
 * COPYING
 * build.xml
+* proguard-project.txt
 
 Moved Files:
 ------------
 Android Gradle projects use a different directory structure than ADT
 Eclipse projects. Here's how the projects were restructured:
 
-* AndroidManifest.xml => tesstwo-new/src/main/AndroidManifest.xml
-* jni/ => tesstwo-new/src/main/jni/
-* libs/armeabi-v7a/liblept.so => tesstwo-new/src/main/jniLibs/armeabi-v7a/liblept.so
-* libs/armeabi-v7a/libtess.so => tesstwo-new/src/main/jniLibs/armeabi-v7a/libtess.so
-* libs/armeabi/liblept.so => tesstwo-new/src/main/jniLibs/armeabi/liblept.so
-* libs/armeabi/libtess.so => tesstwo-new/src/main/jniLibs/armeabi/libtess.so
-* libs/mips/liblept.so => tesstwo-new/src/main/jniLibs/mips/liblept.so
-* libs/mips/libtess.so => tesstwo-new/src/main/jniLibs/mips/libtess.so
-* libs/x86/liblept.so => tesstwo-new/src/main/jniLibs/x86/liblept.so
-* libs/x86/libtess.so => tesstwo-new/src/main/jniLibs/x86/libtess.so
-* res/ => tesstwo-new/src/main/res/
-* src/ => tesstwo-new/src/main/java/
+* AndroidManifest.xml => tesstwo/src/main/AndroidManifest.xml
+* jni/ => tesstwo/src/main/jni/
+* libs/armeabi-v7a/liblept.so => tesstwo/src/main/jniLibs/armeabi-v7a/liblept.so
+* libs/armeabi-v7a/libtess.so => tesstwo/src/main/jniLibs/armeabi-v7a/libtess.so
+* libs/mips/liblept.so => tesstwo/src/main/jniLibs/mips/liblept.so
+* libs/mips/libtess.so => tesstwo/src/main/jniLibs/mips/libtess.so
+* libs/x86/liblept.so => tesstwo/src/main/jniLibs/x86/liblept.so
+* libs/x86/libtess.so => tesstwo/src/main/jniLibs/x86/libtess.so
+* res/ => tesstwo/src/main/res/
+* src/ => tesstwo/src/main/java/
 
 Next Steps:
 -----------

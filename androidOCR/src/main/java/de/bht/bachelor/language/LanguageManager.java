@@ -4,16 +4,20 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 import de.beutch.bachelorwork.util.file.Path;
 import de.bht.bachelor.R;
+import de.bht.bachelor.beans.TtsEngine;
 import de.bht.bachelor.file.FileManager;
 import de.bht.bachelor.helper.NetworkHelper;
+import de.bht.bachelor.manager.Preferences;
 import de.bht.bachelor.message.ServiceMessenger;
 import de.bht.bachelor.tasks.DownloadOcrTraineddata;
 import de.bht.bachelor.tts.TTS;
@@ -37,6 +41,50 @@ import de.bht.bachelor.tts.TTS;
  */
 public class LanguageManager {
 
+	/* the OCR-language position in the spine component */
+	private int ocrSpinnerPosition = -1;
+	/* the TTS-language position in the spine component */
+	private int ttsSpinnerposition = -1;
+	/* current TTS language */
+	private Locale currentTtsLanguage;
+	/* current OCR language */
+	private String currentOcrLanguage;
+	/* current device language */
+	private Locale currentDeviceLanguage;
+	/* tts languages from xml, initialised in AppSetting */
+	private List<Locale> ttsLocaleListISO2 = new ArrayList<Locale>();
+
+	private List<Locale> ttsLanguagesListISO2 = new ArrayList<Locale>();
+
+	private List<String> ttsLanguagesListISO2ToDisplay = new ArrayList<String>();
+	/* ocr languages from xml, initialised in AppSetting */
+	private List<String> ocrLanguagesListISO2 = new ArrayList<String>();
+
+
+
+	private static final String TAG = LanguageManager.class.getSimpleName();
+
+	public static int DEFAULT_LANGUAGE_POSITION = 0;
+	public static final String CHOOSE_TTS_LANGUAGE_NAME = "CHOOSE_TTS_LANGUAGE";
+	public static final String CHOOSE_OCR_LANGUAGE_NAME = "CHOOSE_OCR_LANGUAGE";
+	public static final int CHOOSE_TTS_LANGUAGE_MODE = 10;
+	public static final int CHOOSE_OCR_LANGUAGE_MODE = 20;
+
+
+	private List<TtsEngine> ttsEngineList = new ArrayList<TtsEngine>();
+
+	private Map<String, Locale> localeCountryMap;
+	private Map<String, Locale> localeLanguageMap;
+
+
+
+	private TtsEngine ttsEngine;
+
+
+	public List<String> getOcrLanguagesListISO2() {
+		return ocrLanguagesListISO2;
+	}
+
 	/**
 	 * The main language List displayed on user view. The Lists should be loaded from values/array.xml.
 	 * By initialising TTS, if the device language exist in the OCR / TTS language list , will be set up as default.
@@ -52,17 +100,20 @@ public class LanguageManager {
 	public LanguageManager(ArrayList<String> ttsLanguagesListISO2, ArrayList<String> ocrLanguagesListISO2, Locale deviceLocale) {
 		Log.d(TAG, "LanguagesManager()...");
 		this.ocrLanguagesListISO2 = ocrLanguagesListISO2;
-		this.ttsLanguagesListISO2 = ttsLanguagesListISO2;
+//		this.ttsLanguagesListISO2 = ttsLanguagesListISO2;
 		this.currentDeviceLanguage = Locale.getDefault();
-
-		setDefaultLanguages(deviceLocale);
+		initCountryCodeMapping();
+		initLanguageCodeMapping();
+		initOcrLanguage();
+//		initTtsLanguage();
 	}
 
 	/*
 	 * Default Language for OCR and TTS will be current Language on the device.
 	 * If there is no support of this language , English will be set up.
 	 */
-	private void setDefaultLanguages(Locale deviceLocale) {
+
+	private void initOcrLanguage(){
 		Log.d(TAG, "setDefaultLanguages()..");
 
 		Log.d(TAG, "currentDeviceLanguage.getLanguage()..." + currentDeviceLanguage.getLanguage());
@@ -75,14 +126,127 @@ public class LanguageManager {
 			currentOcrLanguage = iso2LanguageCodeToIso3LanguageCode(ocrLanguagesListISO2.get(0));
 			setOcrSpinnerPosition(1);
 		}
-		if (isInTTSLanguageList(currentDeviceLanguage)) {
-			Log.d(TAG, "define device language as TTS language");
-			String language = ttsLanguagesListISO2.get(ttsSpinnerposition);
-			currentTtsLanguage = new Locale(language, language.toUpperCase());
-		} else {
-			setDefaultTtsLanguage();
-		}
+	}
 
+	private void initTtsLanguage(){
+		int lastPosition = Preferences.getInstance().getInt(Preferences.TTS_SPINER_POSITION);
+		if(lastPosition == -1) {
+			if (isInTTSLanguageList(currentDeviceLanguage)) {
+				Log.d(TAG, "currentDeviceLanguage is available in TTS engine, set it up");
+
+				currentTtsLanguage = ttsLanguagesListISO2.get(ttsSpinnerposition);
+//				currentTtsLanguage = new Locale(language, language.toUpperCase());
+			} else {
+				setDefaultTtsLanguage();
+			}
+		}else{
+			ttsSpinnerposition = lastPosition;
+			currentTtsLanguage = ttsLanguagesListISO2.get(ttsSpinnerposition);
+//			currentTtsLanguage = new Locale(language, language.toUpperCase());
+		}
+	}
+
+
+
+	private void initLanguageCodeMapping() {
+		String[] languages = Locale.getISOLanguages();
+		localeLanguageMap = new HashMap<String, Locale>(languages.length);
+		for (String language : languages) {
+			Locale locale = new Locale(language, "");
+			localeLanguageMap.put(locale.getISO3Language().toLowerCase(), locale);
+		}
+	}
+	private void initCountryCodeMapping() {
+		String[] countries = Locale.getISOCountries();
+		localeCountryMap = new HashMap<String, Locale>(countries.length);
+		for (String country : countries) {
+			Locale locale = new Locale("", country);
+			localeCountryMap.put(locale.getISO3Country().toUpperCase(), locale);
+		}
+	}
+	private String iso3CountryCodeToIso2CountryCode(String iso3CountryCode) {
+		return localeCountryMap.get(iso3CountryCode).getLanguage();
+	}
+
+	private String iso3LanguageCodeToIso2LanguageCode(String iso3LanguageCode) {
+		return localeLanguageMap.get(iso3LanguageCode).getLanguage();
+	}
+
+	/**
+	 *
+	 * @param engine engine package created from TextToSpeech.getDefaultEngine()
+	 * @return
+	 */
+	public TtsEngine getTtsEngineByPackageName(String engine){
+
+		for (int i = 0; i < ttsEngineList.size(); i++) {
+			if(ttsEngineList.get(i).getPackageName().equals(engine)){
+
+				return ttsEngineList.get(i);
+			}
+		}
+		return null;
+	}
+
+	public List<String> getTtsLanguagesListISO2ToDisplay() {
+		return ttsLanguagesListISO2ToDisplay;
+	}
+
+	public void initLanguageManagerForEngine(TtsEngine engine){
+
+		//Key: availableVoices = [eng-USA, eng-GBR, spa-ESP, fra-FRA, deu-DEU, ita-ITA, kor-KOR, zho-CHN]
+		//Key: unavailableVoices = [eng-USA, fra-FRA, ita-ITA, deu-DEU, eng-GBR, spa-ESP, rus-RUS, por-BRA, kor-KOR, spa-MEX]
+
+		this.ttsEngine = engine;
+		List<String> availableList = ttsEngine.getAvailableLanguages();
+		List<String> unavailableList = ttsEngine.getUnavailableLanguages();
+		ttsLanguagesListISO2.clear();
+		ttsLanguagesListISO2ToDisplay.clear();
+		String iso2 = null;
+		for(String iso3: availableList){
+			ttsLanguagesListISO2ToDisplay.add(iso3);
+			String[] split = iso3.split("-");
+
+//			iso2 = iso3LanguageCodeToIso2LanguageCode(split[0]);
+
+			if(split[0].equals("eng")){
+//				iso2 =Locale.US.getLanguage();
+				iso2 =Locale.US.getISO3Language();
+			}
+			Log.d(TAG, "converted " + split[0] + " to iso2: " + iso2);
+			if(split[0] != null) {
+				String locStr = split[0].toLowerCase()+"_"+split[1].toUpperCase();
+						ttsLanguagesListISO2.add(new Locale(locStr));
+
+			}
+
+
+		}
+		initTtsLanguage();
+	}
+
+
+
+	private static final String por_bra = "por-bra";
+	private static final String nld_nld = "nld-nld";
+	private static final String eng_gbr=  "eng-gbr";
+	private static final String eng_usa= "eng-usa";
+ 	private static final String spa_usa= "spa-usa";
+	private static final String ita_ita= "ita-ita";
+	private static final String hin_ind= "hin-ind";
+	private static final String deu_deu= "deu-deu";
+	private static final String ind_idn= "ind-idn";
+	private static final String fra_fra= "fra-fra";
+	private static final String kor_kor= "kor-kor";
+	private static final String pol_pol ="pol-pol";
+	private static final String eng_ind= "eng-ind";
+	private static final String jpn_jpn= "jpn-jpn";
+	private static final String rus_rus= "rus-rus";
+	private static final String spa_esp = "spa-esp";
+
+
+	private Locale getLocaleByIso3Language(String iso3){
+		return null;
 	}
 
 	/**
@@ -101,7 +265,8 @@ public class LanguageManager {
 	private void setDefaultTtsLanguage() {
 		Log.d(TAG, "setDefaultTtsLanguage()................");
 		int pos = DEFAULT_LANGUAGE_POSITION;
-		setCurrentTtsLanguage(new Locale(ttsLanguagesListISO2.get(pos), ttsLanguagesListISO2.get(pos).toUpperCase()));
+		setCurrentTtsLanguage(Locale.US);
+
 		setTtsSpinnerPosition(pos);
 	}
 
@@ -110,9 +275,12 @@ public class LanguageManager {
 	 * If so , the position will be set for spinner.
 	 */
 	private boolean isInTTSLanguageList(Locale l) {
+		Log.d(TAG,"isInTTSLanguageList().." +l.getLanguage());
 		int pos = 0;
-		for (String language : ttsLanguagesListISO2) {
-			if (language.equals(l.getLanguage())) {
+		Locale locale;
+		for (Locale loc : ttsLanguagesListISO2) {
+			Log.d(TAG,"compare with :" +loc.getCountry());
+			if (loc.getLanguage().equals(l.getLanguage())) {
 				setTtsSpinnerPosition(pos);
 				return true;
 			}
@@ -124,7 +292,7 @@ public class LanguageManager {
 	/**
 	 * Convert 2 character language code in to 3 character
 	 * 
-	 * @param iso2CountryCode
+	 * @param iso2LanguageCode
 	 *            2 character language code
 	 * @return iso3CountryCode
 	 */
@@ -249,7 +417,7 @@ public class LanguageManager {
 	 *            language current used by tts
 	 */
 	public void setCurrentTtsLanguage(Locale currentTtsLanguage) {
-		Log.d(TAG, "Setting new TTS locale: " + currentTtsLanguage.getLanguage() + ",iso3 Language: " + currentTtsLanguage.getISO3Language() + "display language: " + currentTtsLanguage.getDisplayLanguage());
+//		Log.d(TAG, "Setting new TTS locale: " + currentTtsLanguage.getLanguage() + ",iso3 Language: " + currentTtsLanguage.getISO3Language() + "display language: " + currentTtsLanguage.getDisplayLanguage());
 		this.currentTtsLanguage = currentTtsLanguage;
 	}
 
@@ -350,62 +518,31 @@ public class LanguageManager {
 
 	public void printLocale(Locale locale) {
 		Log.d(TAG, "getDisplayLanguage : " + locale.getDisplayLanguage());
-		Log.d(TAG, "getISO3Language : " + locale.getISO3Language());
+//		Log.d(TAG, "getISO3Language : " + locale.getISO3Language());
 		Log.d(TAG, "getLanguage : " + locale.getLanguage());
-		Log.d(TAG, "getVariant : " + locale.getVariant());
+		Log.d(TAG, "getCountry : " + locale.getCountry());
+//		Log.d(TAG, "getVariant : " + locale.getVariant());
 	}
 
-	public String getCurrentTtsLanguageFromList() {
-		if (ttsSpinnerposition >= 0 && ttsSpinnerposition <= ttsLanguagesListISO2.size()) {
-			return ttsLanguagesListISO2.get(ttsSpinnerposition);
-		}
-		return "";
-	}
+//	public String getCurrentTtsLanguageFromList() {
+//		if (ttsSpinnerposition >= 0 && ttsSpinnerposition <= ttsLanguagesListISO2.size()) {
+//			return ttsLanguagesListISO2.get(ttsSpinnerposition);
+//		}
+//		return "";
+//	}
 
-	public List<String> getTtsLanguagesListISO2() {
+	public List<Locale> getTtsLanguagesListISO2() {
 		return ttsLanguagesListISO2;
 	}
 
 	/**
-	 * 
-	 * @param languageList
-	 *            List with languages iso2
-	 * 
+	 *
 	 * @return list with supported Languages by TTS
 	 */
-	public ArrayList<String> getSupportedTtslanguagelist() {
-		ArrayList<String> supportedList = new ArrayList<String>();
-		if (TTS.getInstance().getTts() == null)
-			return supportedList;
-		if (this.ttsLanguagesListISO2 == null)
-			return supportedList;
-		for (String l : this.ttsLanguagesListISO2) {
-			if (TTS.getInstance().isLanguageAvailable(new Locale(l, l.toUpperCase())))
-				supportedList.add(l);
-		}
-		return supportedList;
+
+
+	public void setTtsEngineList(List<TtsEngine> ttsEngineList) {
+		this.ttsEngineList = ttsEngineList;
 	}
 
-	/* the OCR-language position in the spine component */
-	private int ocrSpinnerPosition = -1;
-	/* the TTS-language position in the spine component */
-	private int ttsSpinnerposition = -1;
-	/* current TTS language */
-	private Locale currentTtsLanguage;
-	/* current OCR language */
-	private String currentOcrLanguage;
-	/* current device language */
-	private Locale currentDeviceLanguage;
-	/* tts languages from xml, initialised in AppSetting */
-	private List<String> ttsLanguagesListISO2 = new ArrayList<String>();
-	/* ocr languages from xml, initialised in AppSetting */
-	private List<String> ocrLanguagesListISO2 = new ArrayList<String>();
-
-	private static final String TAG = LanguageManager.class.getSimpleName();
-
-	public static int DEFAULT_LANGUAGE_POSITION = 1;
-	public static final String CHOOSE_TTS_LANGUAGE_NAME = "CHOOSE_TTS_LANGUAGE";
-	public static final String CHOOSE_OCR_LANGUAGE_NAME = "CHOOSE_OCR_LANGUAGE";
-	public static final int CHOOSE_TTS_LANGUAGE_MODE = 10;
-	public static final int CHOOSE_OCR_LANGUAGE_MODE = 20;
 }

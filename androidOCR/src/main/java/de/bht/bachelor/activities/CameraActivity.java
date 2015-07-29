@@ -104,8 +104,6 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         Log.d(TAG, "onCreate()....");
         Log.d(TAG, "THREAD ID: " + Thread.currentThread().getId());
 
-//        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
-//        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         createHandler();
         super.setResultHandler(resultHandler);
         if (!languageManager.checkTraineddataForCurrentLanguage(this)) {
@@ -116,7 +114,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         }
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         setContentView(R.layout.camera);
-
+        createControlView();
         getWindow().setFormat(PixelFormat.UNKNOWN);
         // Create our Preview view and set it as the content of our activity.
         animationManager = new AnimationManager(this);
@@ -230,12 +228,11 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         if (activityTyp.equals(ActivityType.PICTURE_VIEW)) {
             Intent pixScreen = new Intent(this, PhotoActivity.class);
             startActivity(pixScreen);
-
-            // this.cancelBtn.setEnabled(true);
         } else {
             if (activityTyp.equals(ActivityType.OCR_VIEW)) {
-                stopAndClosePreview();
+//                stopAndClosePreview();
                 Log.d(TAG, "starting result activity ");
+                mPreview.resetPreview();
                 ocrResult = (OcrResult) object;
                 Preferences.getInstance().putArrayData(Preferences.IMAGE_DATA, ocrResult.getImageData());
                 ocrResult.setImageData(null);
@@ -244,38 +241,20 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
 
                 resultScreen.putExtra(OCR_RESULT_EXTRA_KEY, ocrResult);
                 startActivity(resultScreen);
-            }
-        }
-    }
-
-    private void stopAndClosePreview() {
-        Log.e(TAG,"stopAndClosePreview()....");
-        if (mPreview != null) {
-            mPreview.cancelAllOcrTasks();
-
-            if (mPreview.getOcr() != null) {
-                mPreview.getOcr().clearAndCloseApi();
 
             }
-            if(mPreview.getCamera() != null) {
-                mPreview.getCamera().setPreviewCallback(null);
-            }
-//            surfaceHolder.removeCallback(mPreview);
-            isPreviewInitialized = false;
-            mPreview.stopCamera();
-//            mPreview.resetPreview();
-
         }
     }
 
     private void initSurfaceHolder() {
-        Log.d(TAG,"initSurfaceHolder()....");
+        Log.d(TAG, "initSurfaceHolder()....");
         surfaceView = (SurfaceView) findViewById(R.id.camerapreview);
         surfaceHolder = surfaceView.getHolder();
-
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        // SURFACE_TYPE_NORMA
         surfaceView.setOnClickListener(this);
+    }
+
+    private void createControlView(){
         controlInflater = LayoutInflater.from(getBaseContext());
         View viewControl = controlInflater.inflate(R.layout.control, null);
         LayoutParams layoutParamsControl = new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT);
@@ -290,6 +269,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         surfaceHolder.addCallback(mPreview);
         ImageView img = (ImageView) findViewById(R.id.camera_preview_img);
         mPreview.setImageView(img);
+
         isPreviewInitialized = true;
     }
 
@@ -297,6 +277,12 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
      * Init UI components
      */
     private void initComponents() {
+        Log.d(TAG, "init Components().....");
+        if(layoutBackground != null){
+            Log.d(TAG, " Components initialied already, nothing to do .....");
+            return;
+        }
+
         this.layoutBackground = (LinearLayout) findViewById(R.id.background);
         this.layoutBackground.setOnClickListener(this);
         this.cancelBtn = (Button) findViewById(R.id.cancel);
@@ -326,8 +312,8 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
                     mPreview.getCamera().cancelAutoFocus();
                 }
                 mPreview.resetPreview();
+                mPreview.cleanOcrResultList();
                 mPreview.cancelAllOcrTasks();
-//                mPreview.clearAndCloseApi();
                 animationManager.stopZoomAnimation();
                 cameraLens.setEnabled(true);
                 cancelBtn.setEnabled(false);
@@ -354,14 +340,13 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
 
                 this.progressDialog = new ProgressDialog(this);
                 progressDialog.setTitle("camera focus");
-//                progressDialog.set
                 progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
                 progressDialog.setIndeterminate(false);
-//                progressDialog.setCancelable(true);
                 progressDialog.setButton("Cancel", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         mPreview.resetPreview();
+                        mPreview.cleanOcrResultList();
                         setEnabledToAllButtons(true);
                         progressDialog.dismiss();
                     }
@@ -370,6 +355,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
                     @Override
                     public void onCancel(DialogInterface dialogInterface) {
                         mPreview.resetPreview();
+                        mPreview.cleanOcrResultList();
                         setEnabledToAllButtons(true);
                     }
                 });
@@ -387,6 +373,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     }
 
     private void setEnabledToAllButtons(boolean value) {
+        Log.d(TAG, "setEnabledToAllButtons() value: " + value);
         this.runOCR.setEnabled(value);
         this.cancelBtn.setEnabled(value);
     }
@@ -414,14 +401,12 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
             @Override
             public boolean onLongClick(View v) {
                 try {
-
                     getVibrator().vibrate(VIBRATE_DURATION);
-                    onDifferentDeviceLanguage();
+//                    onDifferentDeviceLanguage();
                     TTS.getInstance().speak(getString(R.string.camera), false);
                 } catch (NotInitializedTtsException ex) {
                     Log.d(TAG, "geting text from exception : " + ex.getTextToSpeech());
                     texttString = ex.getTextToSpeech();
-//                    initTTS();
                 } catch (NoLanguageOnTtsException ex) {
                     Log.e(TAG, "TTS has no language");
                 } catch (Exception e) {
@@ -431,12 +416,12 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
             }
         });
 
-        this.runOCR.setOnLongClickListener(new OnLongClickListener() {
+        this.cameraLens.setOnLongClickListener(new OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
                 try {
                     getVibrator().vibrate(VIBRATE_DURATION);
-                    onDifferentDeviceLanguage();
+//                    onDifferentDeviceLanguage();
                     TTS.getInstance().speak(getString(R.string.runOCRLive), false);
                     // setLanguageBack();
                 } catch (NotInitializedTtsException ex) {
@@ -450,103 +435,58 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
                 return true;
             }
         });
-
-    }
-
-
-
-    protected float[] lowPass(float[] input, float[] output) {
-        if (output == null) return input;
-        for (int i = 0; i < input.length; i++) {
-            output[i] = output[i] + ALPHA * (input[i] - output[i]);
-        }
-        return output;
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         Log.d(TAG, "onConfigurationChanged()  ");
         super.onConfigurationChanged(newConfig);
-        OrientationMode om = null;
-        switch (newConfig.orientation){
-            case Configuration.ORIENTATION_PORTRAIT:
-                om = OrientationMode.PORTRAIT;
-                break;
-            case Configuration.ORIENTATION_LANDSCAPE:
-                om = OrientationMode.LANDSCAPE;
-                break;
-//            case Configuration.ORIENTATION_:
-//                om = OrientationMode.PORTRAIT;
-//                break;
-//            case Configuration.ORIENTATION_PORTRAIT:
-//                om = OrientationMode.PORTRAIT;
-//                break;
+    }
+//    private void stopAndClosePreview() {
+//        Log.e(TAG, "stopAndClosePreview()....");
+//        if (mPreview != null) {
+//            mPreview.cancelAllOcrTasks();
+//
+//            if (mPreview.getOcr() != null) {
+//                mPreview.getOcr().clearAndCloseApi();
+//
+//            }
+//            if(mPreview.getCamera() != null) {
+//                mPreview.removePrewievCallback();
+//            }
+//            isPreviewInitialized = false;
+//            mPreview.stopCamera();
+//        }
+//    }
+    @Override
+    public void onPause() {
+        Log.d(TAG, "onPause().....");
+        super.onPause();
+        if(surfaceView != null) {
+            surfaceView.setVisibility(View.GONE);
         }
-//        CameraActivity.this.mPreview.changeOrientation(om);
-//        changeOrientation(newConfig);s
     }
 
     @Override
     public void onResume() {
         Log.d(TAG, "onResume..................");
         super.onResume();
-//        initSurfaceHolder();
-//        initComponents();
-//        initCameraPreview();
-//        surfaceHolder.addCallback(mPreview);
-        if(!isPreviewInitialized) {
-//            surfaceHolder.addCallback(mPreview);
-            mPreview.cleanOcrResultList();
-            mPreview.resetPreview();
+        if(surfaceView != null) {
+            surfaceView.setVisibility(View.VISIBLE);
         }
-
-//        myOrientationEventListener
-//                = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
-//
-//            @Override
-//            public void onOrientationChanged(int arg0) {
-////                Log.e(TAG, "------ onSensorChanged() onOrientationChanged() ------ " + arg0);
-//                final float x = arg0;
-//			Log.d(TAG, "onSensorChanged: " + ", x: " + x);
-//                OrientationMode om = OrientationManger.getInstance().calculateOrientation(x);
-//                if (om != null) {
-//                    CameraActivity.this.mPreview.changeOrientation(om);
-//                } else {
-//                    Log.e(TAG, "------ onSensorChanged()  OrientationMode is NULL ");
-//                }
-//
-//            }
-//        };
-//        if (myOrientationEventListener.canDetectOrientation()) {
-//
-//            myOrientationEventListener.enable();
-//        }
+//            mPreview.cleanOcrResultList();
+            mPreview.resetPreview();
 
         this.runOCR.setEnabled(true);
         this.cancelBtn.setEnabled(false);
         this.cameraLens.setEnabled(true);
 
         toolTipsToSpeech();
-//        initSensorOrientation();
-//        initAccelerometerMagneticField();
         ImageView img = (ImageView) findViewById(R.id.camera_preview_img);
         img.setVisibility(View.GONE);
+
     }
 
-    private void initAccelerometerMagneticField() {
-        this.mySensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        List<Sensor> sensors = this.mySensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
-
-        if (sensors.size() > 0) {
-            sensorGrav = sensors.get(0);
-        }
-        sensors = mySensorManager.getSensorList(Sensor.TYPE_MAGNETIC_FIELD);
-        if (sensors.size() > 0) {
-            sensorMag = sensors.get(0);
-        }
-//        mySensorManager.registerListener(this, sensorGrav, SensorManager.SENSOR_DELAY_NORMAL);
-//        mySensorManager.registerListener(this, sensorMag, SensorManager.SENSOR_DELAY_NORMAL);
-    }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -574,67 +514,16 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
             isBackPressed = false;
 
         }
+        if(isFinishing()){
+            Preferences.getInstance().putBoolean(Preferences.TTS_CHECKED_KEY, false);
+        }
 
         if (this.mPreview != null)
             mPreview.setControllVariablesToDefault();
 
     }
 
-    /*
-     * Orientation Sensor needed for OCR so the tesseract can work on Landscape and Portrait orientation
-     * The UI-application is ignoring screen changing, working just in Landscape.
-     */
-    private void initSensorOrientation() {
-        if (sensorrunning) {
-            Log.d(TAG, "sensor is running , unregister first");
-            unregisterListener();
-            // return;
-        }
 
-        Log.d(TAG, "init sensor manager");
-        if (mySensorManager == null) {
-            this.mySensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-
-        }
-//        List<Sensor> mySensors = this.mySensorManager.getSensorList(Sensor.TYPE_ORIENTATION);
-//        if (mySensors.size() > 0) {
-//            mySensorManager.registerListener(this, mySensors.get(0), SensorManager.SENSOR_DELAY_NORMAL);
-//            sensorrunning = true;
-//        }
-
-    }
-
-    private void unregisterListener() {
-        Log.d(TAG, "unregister Listener by mySensorManager");
-        if (mySensorManager == null) {
-            this.mySensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        }
-//        if (sensorrunning) {
-//            mySensorManager.unregisterListener(this);
-//            sensorrunning = false;
-//        }
-    }
-
-    @Override
-    public void onPause() {
-        Log.d(TAG, "onPause().....");
-        super.onPause();
-//        if (sensorGrav != null && sensorMag != null) {
-//            mySensorManager.unregisterListener(this, sensorGrav);
-//            mySensorManager.unregisterListener(this, sensorMag);
-//
-//        }
-        if (myOrientationEventListener != null) {
-            myOrientationEventListener.disable();
-        }
-        if (sensorrunning) {
-            unregisterListener();
-            OrientationManger.getInstance().reset();
-        }
-        stopAndClosePreview();
-
-
-    }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
@@ -675,10 +564,10 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
 //            isScreenOn = false;
 //            setLanguageToTTS();
         }
-        if(savedInstanceState.containsKey(ORIENTATION_MODE) && savedInstanceState.getString(ORIENTATION_MODE) != null ) {
-
-            mPreview.setRestoredOrientatiomMode(OrientationManger.getOrientationModeByName(savedInstanceState.getString(ORIENTATION_MODE)));
-        }
+//        if(savedInstanceState.containsKey(ORIENTATION_MODE) && savedInstanceState.getString(ORIENTATION_MODE) != null ) {
+//
+//            mPreview.setRestoredOrientatiomMode(OrientationManger.getOrientationModeByName(savedInstanceState.getString(ORIENTATION_MODE)));
+//        }
     }
 
 

@@ -2,13 +2,13 @@ apply plugin: 'com.android.library'
 
 
 android {
-    compileSdkVersion 8
-    buildToolsVersion "21.1.1"
+    compileSdkVersion 9
+    buildToolsVersion '21.1.1'
 
     defaultConfig {
 //        applicationId "de.beutch.bachelorwork.util"
-        minSdkVersion 8
-        targetSdkVersion 21
+        minSdkVersion 9
+        targetSdkVersion 19
 
 
     }

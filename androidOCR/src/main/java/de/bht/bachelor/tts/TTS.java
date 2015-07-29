@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Locale;
 
 import de.bht.bachelor.activities.MenuActivity;
+import de.bht.bachelor.exception.LanguageNotSupportedException;
 import de.bht.bachelor.exception.NotInitializedTtsException;
 import de.bht.bachelor.message.ServiceMessenger;
 import de.bht.bachelor.setting.AppSetting;
@@ -57,28 +58,25 @@ public class TTS {
      * @param tts
      * @param language
      */
-    public void init(TextToSpeech tts, Locale language) {
+    public void init(TextToSpeech tts, Locale language) throws LanguageNotSupportedException {
         Log.d(TAG, "init TTS engine ");
-        try {
-            if (isInitialized || this.tts != null) {
-                if (tts.isSpeaking())
-                    tts.stop();
-                this.tts.shutdown();
+        if (isInitialized && this.tts != null) {
+            if (this.tts.isSpeaking()) {
+                this.tts.stop();
             }
-
-            this.tts = tts;
-            if (language != null) {
-                Log.d(TAG, "init().." + language.getLanguage());
-                setLanguage(language);
-            }
-            isInitialized = true;
-
-        } catch (NullPointerException ex) {
-            Log.e(TAG, "could not init tts", ex);
+            this.tts.shutdown();
         }
+
+        this.tts = tts;
+        if (language != null) {
+            Log.d(TAG, "init().." + language.getLanguage());
+            setLanguage(language);
+        }
+        isInitialized = true;
+
     }
 
-    public boolean setLanguage(Locale loc) {
+    public boolean setLanguage(Locale loc) throws LanguageNotSupportedException {
         Log.d(TAG, "setLanguage(): " + loc.getDisplayLanguage());
         int result;
         AppSetting.getInstance().getLanguageManager().printLocale(loc);
@@ -87,16 +85,50 @@ public class TTS {
             if (tts.isSpeaking())
                 tts.stop();
         }
+//        int res = tts.isLanguageAvailable(loc);
+//        switch (res) {
+//
+//            case TextToSpeech.LANG_AVAILABLE:
+//                Log.e(TAG, "*********LANG_AVAILABLE*************");
+//                break;
+//            case TextToSpeech.LANG_COUNTRY_AVAILABLE:
+//                Log.e(TAG, "*********LANG_COUNTRY_AVAILABLE*************");
+//                break;
+//            case TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE:
+//                Log.e(TAG, "*********LANG_COUNTRY_VAR_AVAILABLE*************");
+//                break;
+//            case TextToSpeech.LANG_MISSING_DATA:
+//                Log.e(TAG, "*********LANG_MISSING_DATA*************");
+//                break;
+//            case TextToSpeech.LANG_NOT_SUPPORTED:
+//                Log.e(TAG, "*********LANG_NOT_SUPPORTED*************");
+//                break;
+//
+//
+//        }
+
         result = this.tts.setLanguage(loc);
 
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            Log.e(TAG, "*********This Language is not supported*************");
+
+            StringBuilder sb = new StringBuilder("could not set language " + loc.getCountry() + " in tts. Reason:\n ");
+            switch (result) {
+                case TextToSpeech.LANG_MISSING_DATA:
+                    Log.e(TAG, "*********LANG_MISSING_DATA*************");
+                    sb.append("Language missing data ");
+                    break;
+                case TextToSpeech.LANG_NOT_SUPPORTED:
+                    Log.e(TAG, "*********LANG_NOT_SUPPORTED*************");
+                    sb.append("language not supported");
+                    break;
+            }
 
             if (backupLocale != null) {
                 Log.e(TAG, "Seting last Language back");
                 // tts.setLanguage(backupLocale);
             }
-            return false;
+            throw new LanguageNotSupportedException(sb.toString());
+//            return false;
         } else {
             Log.d("TTS", "********************** This Language is supported ************************");
             this.isInitialized = true;
@@ -124,11 +156,11 @@ public class TTS {
         Log.d(TAG, "speak()........");
 
         if (tts == null) {
-            throw new Exception("Can not use TTS api");
+            throw new Exception("Can not use TTS api, tts is null");
         }
 
         Log.d(TAG, "tts engine language: " + tts.getLanguage());
-        if(tts.getLanguage() == null) {
+        if (tts.getLanguage() == null) {
             setLanguage(AppSetting.getInstance().getLanguageManager().getCurrentTtsLanguage());
         }
 
@@ -138,10 +170,7 @@ public class TTS {
         if (!apiChecked) {
             throw new Exception("TTS api is not chacked ");
         }
-        if (tts.getLanguage() == null) {
-            tts.setLanguage(AppSetting.getInstance().getLanguageManager().getCurrentTtsLanguage());
-//			throw new NoLanguageOnTtsException("The TTS engine has no language");
-        }
+
         if (text == null) {
             throw new NullPointerException("text has value null !");
         }
@@ -165,14 +194,16 @@ public class TTS {
                 restoreSpeach = false;
             }
         } else {
-            if (!tts.isSpeaking()) {
-                myHashSpeech.clear();
-                myHashSpeech.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, this.endOfToolTipsToSpeech);
-
-                tts.speak(text, TextToSpeech.QUEUE_ADD, myHashSpeech);
-            } else {
-                Log.d(TAG, "could not call api to speek, tts is speaking now ");
+            if (tts.isSpeaking()) {
+                int stop = tts.stop();
             }
+            myHashSpeech.clear();
+            myHashSpeech.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, this.endOfToolTipsToSpeech);
+
+            tts.speak(text, TextToSpeech.QUEUE_ADD, myHashSpeech);
+//            } else {
+//                Log.d(TAG, "could not call api to speek, tts is speaking now ");
+//            }
         }
 
     }
@@ -227,7 +258,7 @@ public class TTS {
     public void shutdown() {
         Log.d(TAG, "shutdown()...");
         isInitialized = false;
-        apiChecked = false;
+        apiChecked = true;
         isOnChacking = false;
         if (tts != null)
             tts.shutdown();

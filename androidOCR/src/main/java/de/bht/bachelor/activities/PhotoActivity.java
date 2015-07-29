@@ -23,6 +23,7 @@ import android.widget.FrameLayout;
 import de.bht.bachelor.R;
 import de.bht.bachelor.beans.Dimension;
 import de.bht.bachelor.camera.OrientationMode;
+import de.bht.bachelor.exception.LanguageNotSupportedException;
 import de.bht.bachelor.graphic.transform.ImageProcessing;
 import de.bht.bachelor.helper.ActivityType;
 import de.bht.bachelor.helper.ChangeActivityHelper;
@@ -161,7 +162,11 @@ public class PhotoActivity extends MenuCreatorActivity implements OnClickListene
 
 			if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
 				Log.d(TAG, "Success, create the TTS instanc");
-				TTS.getInstance().init(new TextToSpeech(getBaseContext(), this), AppSetting.getInstance().getLanguageManager().getCurrentTtsLanguage());
+				try {
+					TTS.getInstance().init(new TextToSpeech(getBaseContext(), this), AppSetting.getInstance().getLanguageManager().getCurrentTtsLanguage());
+				} catch (LanguageNotSupportedException e) {
+					Log.e(TAG, "Could not inti TTS with language: " + AppSetting.getInstance().getLanguageManager().getCurrentTtsLanguage());
+				}
 				TTS.getInstance().setApiChecked(true);
 				// tts.setLanguage(Locale.GERMANY);
 			} else {

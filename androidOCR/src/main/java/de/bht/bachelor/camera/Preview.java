@@ -73,7 +73,7 @@ public class Preview implements SurfaceHolder.Callback {
     private boolean previewing = false;
     private int previewbpp;// BytesPerPixel
     private final SurfaceHolder surfaceHolder;
-    private Camera camera;
+    private Camera camera = null;
     private List<SendFrameToOCRTasc> ocrTacks = new ArrayList<SendFrameToOCRTasc>();
 
     private int buffer;
@@ -90,6 +90,7 @@ public class Preview implements SurfaceHolder.Callback {
     private int rotate = 0;
 
     private volatile CameraMode currentCameraMode;
+    private volatile boolean camerReleased = true;
     /**
      * ************ draw ***************
      */
@@ -120,10 +121,29 @@ public class Preview implements SurfaceHolder.Callback {
         this.surfaceHolder = surfaceHolder;
         this.context = context;
     }
+    public void removePrewievCallback() {
+        Log.d(TAG, " removePreviewCallback()..");
+        if (camera != null && !this.camerReleased){
+            camera.setPreviewCallback(null);
+            camera.setPreviewCallbackWithBuffer(null);
+        }
+    }
 
+    public void restartHolder(SurfaceHolder holder){
+        openCamera();
+        try {
+            camera.setPreviewDisplay(holder);
+        } catch (IOException e) {
+            Log.e(TAG,"could not restart Holder ",e);
+        }
+    }
     public void closeCamera(Camera camera) {
+        if(camera == null || camerReleased){
+            return;
+        }
         synchronized (camera) {
             Log.d(TAG, "closeCamera()..");
+            camerReleased = true;
             camera.stopPreview();
             camera.release();
             camera = null;
@@ -154,35 +174,20 @@ public class Preview implements SurfaceHolder.Callback {
             if (camera != null) {
                 closeCamera(this.camera);
             }
-            camera = Camera.open();
+           openCamera();
             Log.d(TAG, "seting preview display");
             camera.setPreviewDisplay(holder);
-            firstInitVideoCall = true;
 
         } catch (IOException exception) {
-            synchronized (camera) {
-                camera.stopPreview();
-                camera.release();
-                camera = null;
-            }
+            closeCamera(camera);
             Log.e(TAG, "Could not det preview", exception);
             // TODO: add more exception handling logic here
         } catch (RuntimeException ex) {
 
             if (camera != null) {
-
-                synchronized (camera) {
-                    camera.stopPreview();
-
-                    camera.release();
-                }
-                camera = null;
+                closeCamera(camera);
             }
             Log.e(TAG, "Could not det preview", ex);
-//            if (serviceMessenger == null && resultHandler != null)
-//                serviceMessenger = new ServiceMessenger(resultHandler);
-//            if (serviceMessenger != null)
-//                serviceMessenger.sendMessage(0, 8, null);
         }
     }
 
@@ -197,11 +202,9 @@ public class Preview implements SurfaceHolder.Callback {
 
         try {
             if (camera != null) {
-                synchronized (camera) {
-                    camera.stopPreview();
-                    camera.release();
-                    camera = null;
-                }
+                camera.stopPreview();
+                removePrewievCallback();
+                closeCamera(camera);
             }
         } catch (NullPointerException e) {
             Log.d(TAG, "Camera is null.", e);
@@ -235,9 +238,7 @@ public class Preview implements SurfaceHolder.Callback {
 
                 setFlashSetiing(params);
                 params.setPreviewFrameRate(15);
-                // params.setPictureFormat(ImageFormat.NV21)
                 params.setPictureFormat(PixelFormat.JPEG);// PixelFormat.JPEG
-                // camera.setParameters(params);
                 buffer = this.frameWidth * this.frameHeight * this.previewbpp / 8;
                 Log.d(TAG, "Computed new Buffer: " + buffer);
                 setCameraDisplayOrientation(context, getCameraId(camera), camera);
@@ -258,7 +259,7 @@ public class Preview implements SurfaceHolder.Callback {
     }
 
     public void setRestoredOrientatiomMode(OrientationMode orientationMode) {
-        Log.d(TAG,"setRestoredOrientatiomMode()..");
+        Log.d(TAG, "setRestoredOrientatiomMode()..");
         if(this.orientationMode != null){
            getRotateByNewOrientationMode(orientationMode);
         }
@@ -301,12 +302,12 @@ public class Preview implements SurfaceHolder.Callback {
                 break;
             case Surface.ROTATION_180:
                 degrees = 180;
-                this.orientationMode = OrientationMode.PORTRAIT;
+                this.orientationMode = OrientationMode.PORTRAIT_UPSIDE_DOWN;
                 Log.d(TAG, "ROTATION_180");
                 break;
             case Surface.ROTATION_270:
                 degrees = 270;
-                this.orientationMode = OrientationMode.LANDSCAPE;
+                this.orientationMode = OrientationMode.LANDSCAPE_UPSIDE_DOWN;
                 Log.d(TAG, "ROTATION_270");
                 break;
         }
@@ -407,7 +408,7 @@ public class Preview implements SurfaceHolder.Callback {
         Log.d(TAG, "takePicture().....");
         if (camera == null) {
             Log.d(TAG, "opening new camera >>>>>>>>>>");
-            camera = Camera.open();
+            openCamera();
 
             onSurfaceChanged(camera);
         }
@@ -425,7 +426,7 @@ public class Preview implements SurfaceHolder.Callback {
         Log.d(TAG, "startAutoFocus()....cameraMode: " + cameraMode.toString());
         if (camera == null) {
             Log.d(TAG, "opening new camera >>>>>>>>>>");
-            camera = Camera.open();
+            openCamera();
             onSurfaceChanged(camera);
             ocrResultList.clear();
             firstInitVideoCall = true;
@@ -446,19 +447,14 @@ public class Preview implements SurfaceHolder.Callback {
             if (this.currentCameraMode == CameraMode.Video && cameraMode == CameraMode.Photo) {
                 // changing mode from video in to the photo
                 cancelAllOcrTasks();
-//            isLocked = true;
                 Log.d(TAG, "changing from video in to photo mode ,set camera to null, call auto focus");
-                camera.stopPreview();
-                camera.release();
-                camera = null;
+                closeCamera(camera);
                 firstInitVideoCall = true;// set it back to correctly initialise next call in video mode
                 if (this.characterBoxView != null)
                     this.characterBoxView.cleanView();
             }
 
-            // this.isMakingPhoto = isMakingPhoto;
             this.currentCameraMode = cameraMode;
-
 
             camera.autoFocus(myAutoFocusCallback);
         }
@@ -471,26 +467,21 @@ public class Preview implements SurfaceHolder.Callback {
             if (this.characterBoxView != null) {
                 this.characterBoxView.cleanView();
             }
-            if (ocrResultList != null) {
-                ocrResultList.clear();
-            }
-//            rotate = 0;
-//            orientationMode = null;
             setControllVariablesToDefault();
         }
     }
 
+    public boolean isCamerReleased() {
+        return camerReleased;
+    }
 
-    public void stopCamera() {
-        Log.e(TAG, "stop camera()...");
-        synchronized (this) {
-            if (camera == null) {
-                return;
-            }
-            camera.stopPreview();
-            camera.cancelAutoFocus();
-            camera.release();
-            camera = null;
+    public void openCamera(){
+        Log.d(TAG,"camer is null : "+(camera==null)+", camerReleased= "+camerReleased);
+        if(camerReleased){
+            Log.e(TAG, "open camera()...");
+            camera = Camera.open();
+            camerReleased = false;
+            firstInitVideoCall = true;
         }
     }
 
@@ -513,16 +504,11 @@ public class Preview implements SurfaceHolder.Callback {
             ocrTacks.clear();
         }
     }
-//
-//    private void stopVideoCallback() {
-//        camera.setPreviewCallbackWithBuffer(null);
-//    }
 
     private AutoFocusCallback myAutoFocusCallback = new AutoFocusCallback() {
 
         @Override
         public void onAutoFocus(boolean isOnFocus, Camera arg1) {
-            // buttonTakePicture.setEnabled(true); 701352
             try {
                 if (currentCameraMode == CameraMode.Photo) {
                     Log.d(TAG, "onAutoFocus()....picture mode, focus: " + isOnFocus);
@@ -629,7 +615,6 @@ public class Preview implements SurfaceHolder.Callback {
                 } else {
                     throw new IllegalArgumentException("Wrong data format from camera. Must be NV21, the current format value is " + imageFormat);
                 }
-//                changeOrientation(OrientationManger.getInstance().getCurrentOrientationMode());
                 getPreviewValues(parameters);
 
                 Log.d(TAG, "frame width : " + w + ", hight : " + h + ", ocrResultList.size(): " + ocrResultList.size() + " rotate: " + rotate + " orient mode: " + Preview.this.orientationMode.name());
@@ -709,13 +694,10 @@ public class Preview implements SurfaceHolder.Callback {
             Log.d(TAG, "will rotate " + rotateValue + " orientation=  " + Preview.this.orientationMode.name() + " w= " + this.w + " h= " + this.h);
             if (rotateValue != 0) {
 
-                int width = 0;
-                int height = 0;
-
                 pix = ocr.convertToPix(data, this.w, this.h);
                 bitmap = WriteFile.writeBitmap(pix);
-                width = bitmap.getWidth();
-                height = bitmap.getHeight();
+            int    width = bitmap.getWidth();
+             int   height = bitmap.getHeight();
                 Log.d(TAG, "bitmap getWidth " + width + " getHeight: " + height);
                 // Setting pre rotate
                 Matrix mtx = new Matrix();
@@ -726,20 +708,6 @@ public class Preview implements SurfaceHolder.Callback {
                 Log.d(TAG, "bitmap getWidth " + bitmap.getWidth() + " getHeight: " + bitmap.getHeight());
 
                 final Bitmap finalBitmap = bitmap;//Bitmap.createBitmap(bitmap, 0, 0, w, h);
-                CameraActivity cameraActivity = (CameraActivity) context;
-//                cameraActivity.runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        imageView.setImageBitmap(finalBitmap);
-//                        imageView.setVisibility(View.VISIBLE);
-//                        imageView.setOnClickListener(new View.OnClickListener() {
-//                            @Override
-//                            public void onClick(View view) {
-//                                imageView.setVisibility(View.GONE);
-//                            }
-//                        });
-//                    }
-//                });
 
                 if (ocr != null && ocr.isApiCreated()) {
                     ocrResult = ocr.runTessWithData2(data, finalBitmap, this.w, this.h, bpp, bpp * this.w);
