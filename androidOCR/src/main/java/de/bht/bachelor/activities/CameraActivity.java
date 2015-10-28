@@ -31,6 +31,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.util.List;
@@ -94,6 +95,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     private AnimationManager animationManager;
     private String orientationModeName = null;
     private static final String ORIENTATION_MODE = "orientation_mode";
+    private FrameLayout settingBtn;
 
 
     @Override
@@ -291,23 +293,26 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         this.runOCR.setOnClickListener(this);
         this.cameraLens = (Button) findViewById(R.id.camera_lens);
         this.cameraLens.setOnClickListener(this);
+        this.settingBtn = (FrameLayout) findViewById(R.id.setting_layout);
+        this.settingBtn.setOnClickListener(this);
 
     }
 
     @Override
     public void onClick(View view) {
-        if (view == surfaceView) {
-            if (componentsVisibe) {
-                componentsVisibe = false;
-                cancelBtn.setVisibility(Button.INVISIBLE);
-                runOCR.setVisibility(Button.INVISIBLE);
-            } else {
-                componentsVisibe = true;
-                cancelBtn.setVisibility(Button.VISIBLE);
-                runOCR.setVisibility(Button.VISIBLE);
-            }
-        } else {
-            if (view.getId() == R.id.cancel) {
+        switch (view.getId()){
+            case R.id.camerapreview:
+                if (componentsVisibe) {
+                    componentsVisibe = false;
+                    cancelBtn.setVisibility(Button.INVISIBLE);
+                    runOCR.setVisibility(Button.INVISIBLE);
+                } else {
+                    componentsVisibe = true;
+                    cancelBtn.setVisibility(Button.VISIBLE);
+                    runOCR.setVisibility(Button.VISIBLE);
+                }
+                break;
+            case R.id.cancel:
                 if(mPreview.getCamera() != null){
                     mPreview.getCamera().cancelAutoFocus();
                 }
@@ -317,7 +322,8 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
                 animationManager.stopZoomAnimation();
                 cameraLens.setEnabled(true);
                 cancelBtn.setEnabled(false);
-            } else if (view.getId() == R.id.camera_lens) {
+                break;
+            case R.id.camera_lens:
                 if (characterBoxView != null) {
                     this.characterBoxView.resetView();
                 }
@@ -329,8 +335,13 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
                 mPreview.startAutoFocus(CameraMode.Video);
 
                 animationManager.addAndStartAnimation(cameraLens);
-            }
+                break;
+            case R.id.setting_layout:
+                Intent intent = new Intent(this, MenuLanguagesActivity.class);
+                startActivity(intent);
+                break;
         }
+
     }
 
     @Override

@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Dialog;
+import android.content.ClipData;
+import android.text.ClipboardManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -29,6 +32,8 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import de.bht.bachelor.R;
 import de.bht.bachelor.beans.OcrResult;
 import de.bht.bachelor.graphic.transform.ImageProcessing;
@@ -136,6 +141,15 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
                 pagerAdapter.notifyDataSetChanged();
             }                                                                                                                                           
         }
+		Button copy = (Button) findViewById(R.id.copy_to_clipboard);
+		copy.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+				clipboard.setText(textView.getText());
+				Toast.makeText(OcrResultActivity.this,getString(R.string.copy_text_to_clipboard_msg),Toast.LENGTH_LONG).show();
+			}
+		});
 		createHandler();
 
 	}

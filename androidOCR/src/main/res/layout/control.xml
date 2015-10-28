@@ -27,17 +27,27 @@
 	<!--android:background="@drawable/ocr_selector">-->
 <!--</Button>-->
 
-
-    <Button
-        android:id="@+id/cancel"
+    <FrameLayout
+        android:id="@+id/cancel_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="right|top"
-        android:layout_margin="10dp"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
-        android:background="@drawable/cancel_selector"></Button>
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/icon_circle_shadow_botton"
+        android:layout_margin="10dp"
+        >
 
+        <Button
+            android:id="@+id/cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginLeft="4dp"
+            android:background="@drawable/cancel_selector"></Button>
+    </FrameLayout>
     <FrameLayout
         android:id="@+id/run_ocr"
         android:layout_width="wrap_content"
@@ -63,6 +73,27 @@
             android:layout_height="wrap_content"
 
             android:background="@drawable/camera_lens_white200px"></Button>
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/setting_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|bottom"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/icon_circle_shadow_botton"
+        android:layout_margin="10dp">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:scaleType="fitXY"
+            android:layout_gravity="center"
+            android:src="@drawable/menu"></ImageView>
+-->
     </FrameLayout>
 <!--<View-->
     <!--android:id="@+id/tessTextFrameView"-->

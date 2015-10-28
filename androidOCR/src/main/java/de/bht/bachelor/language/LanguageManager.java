@@ -319,9 +319,10 @@ public class LanguageManager {
 			throw new IllegalArgumentException("wrong language code iso3: " + iso3);
 
 		String traineddataName = iso3;
-
 		if (compress) {
-			traineddataName += context.getString(R.string.traineddata_ending_name_compress);
+//			traineddataName += context.getString(R.string.traineddata_ending_name_compress);
+			String newName = "tesseract-ocr-3.01."+iso3+".tar.gz ";
+			return newName;
 		} else {
 			traineddataName += context.getString(R.string.traineddata_ending_name_uncompress);
 		}
@@ -375,11 +376,11 @@ public class LanguageManager {
 		String traineddataNameUncompress;
 		DownloadOcrTraineddata downloadOcrTessdata;
 		try {
-			String urlStr = context.getString(R.string.traineddata_url);
+			String urlStr = context.getString(R.string.traineddata_url_new);
 			traineddataNameUncompress = getTraineddataNameByLanguage(context, iso3Language, false);
 			if (!new FileManager().check(new File(Path.LANGUAGE_TRAINEDDATA_DIR + traineddataNameUncompress), false)) {
 				if (NetworkHelper.isConnected(context)) {
-					traineddataNameCompress = getTraineddataNameByLanguage(context, iso3Language, true);
+					traineddataNameCompress = getTraineddataNameByLanguage(context, iso3Language, false);
 					// downloadOcrTessdata = new DownloadOcrTessdata(mProgressDialog, "pol.traineddata.gz", "pol.traineddata", this.resultHandler);
 					downloadOcrTessdata = new DownloadOcrTraineddata(traineddataNameCompress, traineddataNameUncompress, resultHandler);
 					try {

@@ -18,11 +18,13 @@
 	<string name="ocrOnWork">Bitte warten Sie einen kleinen Moment</string>
 	<string name="downloadDialogText">Lädt Datei herunter: </string>
 	<string name="traineddata_url">http://tesseract-ocr.googlecode.com/files/"</string>
+    <string name="traineddata_url_new">https://github.com/tesseract-ocr/tessdata/raw/master/"</string>
 	<string name="traineddata_ending_name_compress">.traineddata.gz</string>
 	<string name="traineddata_ending_name_uncompress">.traineddata</string>
 	<string name="languageTTS_info_no_language">du hast noch keine Sprache ausgewählt für die Texterkennung</string>
 	<string name="languageOCR_info_no_language">du hast noch keine Sprache ausgewählt für die Text-zu-Sprache</string>
 	<string name="deviceLanguage">die Sprache des Gerätes: </string>
-	<string name="ttsLanguageLabel">die Sprache der Texterkennung: </string>
-	<string name="ocrLanguageLabel">die Sprache der Text-zu-Sprache: </string>
+	<string name="ttsLanguageLabel">die Sprache der Text-zu-Sprache: </string>
+	<string name="ocrLanguageLabel">die Sprache der Texterkennung: </string>
+    <string name="copy_text_to_clipboard_msg">text has been copied to clipboard</string>
 </resources>

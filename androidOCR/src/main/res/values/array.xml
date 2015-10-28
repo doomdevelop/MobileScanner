@@ -14,6 +14,7 @@
     	<item>it</item>
     	<item>es</item>
     	<item>pl</item>
+		<item>th</item>
     </string-array>
     <string-array name="ttsLanguagesArrayChooseMode">
         <item>Choose language for Text to speech</item>
