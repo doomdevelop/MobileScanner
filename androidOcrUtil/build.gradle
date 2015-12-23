@@ -1,9 +1,7 @@
 apply plugin: 'com.android.library'
-
-
 android {
     compileSdkVersion 9
-    buildToolsVersion '21.1.1'
+    buildToolsVersion '23.0.0'
 
     defaultConfig {
 //        applicationId "de.beutch.bachelorwork.util"
@@ -19,4 +17,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
+}
+
+dependencies {
+
 }

@@ -8,9 +8,11 @@ should evaluate whether these are still needed in your project and if
 so manually move them:
 
 * .gitignore
+* AndroidManifest.xml~
 * COPYING
 * build.xml
 * proguard-project.txt
+* project.properties~
 
 Moved Files:
 ------------
@@ -20,10 +22,13 @@ Eclipse projects. Here's how the projects were restructured:
 * AndroidManifest.xml => tesstwo/src/main/AndroidManifest.xml
 * jni/ => tesstwo/src/main/jni/
 * libs/armeabi-v7a/liblept.so => tesstwo/src/main/jniLibs/armeabi-v7a/liblept.so
+* libs/armeabi-v7a/libpngt.so => tesstwo/src/main/jniLibs/armeabi-v7a/libpngt.so
 * libs/armeabi-v7a/libtess.so => tesstwo/src/main/jniLibs/armeabi-v7a/libtess.so
 * libs/mips/liblept.so => tesstwo/src/main/jniLibs/mips/liblept.so
+* libs/mips/libpngt.so => tesstwo/src/main/jniLibs/mips/libpngt.so
 * libs/mips/libtess.so => tesstwo/src/main/jniLibs/mips/libtess.so
 * libs/x86/liblept.so => tesstwo/src/main/jniLibs/x86/liblept.so
+* libs/x86/libpngt.so => tesstwo/src/main/jniLibs/x86/libpngt.so
 * libs/x86/libtess.so => tesstwo/src/main/jniLibs/x86/libtess.so
 * res/ => tesstwo/src/main/res/
 * src/ => tesstwo/src/main/java/

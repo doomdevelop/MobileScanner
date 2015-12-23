@@ -1,13 +1,16 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <?asciidoc-toc?>
 <?asciidoc-numbered?>
 <refentry lang="en">
+<refentryinfo>
+    <title>UNICHARAMBIGS(5)</title>
+</refentryinfo>
 <refmeta>
 <refentrytitle>unicharambigs</refentrytitle>
 <manvolnum>5</manvolnum>
-<refmiscinfo class="source">&nbsp;</refmiscinfo>
-<refmiscinfo class="manual">&nbsp;</refmiscinfo>
+<refmiscinfo class="source">&#160;</refmiscinfo>
+<refmiscinfo class="manual">&#160;</refmiscinfo>
 </refmeta>
 <refnamediv>
     <refname>unicharambigs</refname>
