@@ -107,7 +107,7 @@ public class PreprocessingService extends Service {
 				// runTestsOCR(orgBitmap, bm, rect);
 				// **********************************
 
-				ocr = new OCR(handler);
+				ocr = new OCR();
 				timer.start();
 				orientationMode = ChangeActivityHelper.getInstance().getOrientationMode();
 				if (orientationMode == OrientationMode.PORTRAIT || orientationMode == OrientationMode.PORTRAIT_UPSIDE_DOWN) {
@@ -174,20 +174,20 @@ public class PreprocessingService extends Service {
 			OCR ocr;
 
 			timer = new Timer();
-			ocr = new OCR(handler);
+			ocr = new OCR();
 			timer.start();
 			ocr.testWithRect(orgBitmap, rect);
 			timer.stop();
 			Log.d(TAG, "The recognising by rect and org image took " + timer.getRunTime() + " ms");
 
-			ocr = new OCR(handler);
+			ocr = new OCR();
 			timer.start();
 			data = ConvertUtil.getAvarage(bm);
 			ocr.testWithCruppedBitmapAsPix(preparePixForOCR(data, bm.getWidth(), bm.getHeight()));
 			timer.stop();
 			Log.d(TAG, "The recognising by cropped converted image took " + timer.getRunTime() + " ms");
 
-			ocr = new OCR(handler);
+			ocr = new OCR();
 			timer.start();
 			ocr.testWithCropped8888(bm);
 			timer.stop();

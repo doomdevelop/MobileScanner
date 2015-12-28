@@ -40,9 +40,9 @@ public class AppSetting {
 
 
 	public void initLanguageMenager(Context context) {
-		Log.d(TAG, "initLanguageMenager()..........");
 		if (languageManager == null) {
 			Log.d(TAG, "initLanguageMenager()....");
+			//TODO: this init take > 200 ms, move to background task
 			Resources res = context.getResources();
 			Locale deviceLocale = context.getResources().getConfiguration().locale;
 			if (deviceLocale == null)

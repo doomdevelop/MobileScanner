@@ -50,8 +50,8 @@ public class OCR {
      * @param languageManager
      * @param handler
      */
-    public OCR(Handler handler) {
-        this.resultHandler = handler;
+    public OCR( ) {
+//        this.resultHandler = handler;
         this.languageManager = AppSetting.getInstance().getLanguageManager();
         apiCreated = initAPI();
         prepareTesseract();
@@ -253,7 +253,7 @@ public class OCR {
         return ocrResult;
     }
 
-    public Pix convertToPix(byte[] data, int width, int height){
+    public static Pix convertToPix(byte[] data, int width, int height){
         Log.d(TAG,"convertToPix() w "+width+" h "+height);
         Pix pix = ReadFile.readBytes8(data,width,height);
         if(pix == null){
@@ -264,7 +264,7 @@ public class OCR {
         return pix;
     }
 
-    public Pix rotate(Pix pix, float rotateValue, boolean quality) {
+    public static Pix rotate(Pix pix, float rotateValue, boolean quality) {
         Log.d(TAG, "image will be rotated ");
         Pix temp = Rotate.rotate(pix, rotateValue, quality);
         if (temp != null && temp.getNativePix() > 0)

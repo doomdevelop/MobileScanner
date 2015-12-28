@@ -31,10 +31,8 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import java.util.List;
 
 import de.bht.bachelor.R;
 import de.bht.bachelor.beans.OcrResult;
@@ -46,7 +44,6 @@ import de.bht.bachelor.exception.NotInitializedTtsException;
 import de.bht.bachelor.helper.ActivityType;
 import de.bht.bachelor.language.LanguageManager;
 import de.bht.bachelor.manager.AnimationManager;
-import de.bht.bachelor.manager.OrientationManger;
 import de.bht.bachelor.manager.Preferences;
 import de.bht.bachelor.message.ServiceMessenger;
 import de.bht.bachelor.setting.AppSetting;
@@ -72,30 +69,23 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     private FrameLayout runOCR;
     private Button cameraLens;
     private boolean componentsVisibe = true;
-    private SensorManager mySensorManager;
     private volatile boolean sensorrunning = false;
     private boolean checkSetupAgain = false;
     // private boolean isScreenOn = true;
     private String texttString;
     private static final int DIALOG_CAMERA_FOCUS = 10;
-    private Dialog focusDialog;
     public static final String OCR_RESULT_EXTRA_KEY = "ocr_result_extra_key";
-    private Animation animation;
 
     private ProgressDialog progressDialog;
-    private OrientationEventListener myOrientationEventListener;
     public final static String EXTRA_MESSAGE_ISO3_TO_DOWNLOAD = "de.bht.bachelor.activities.DOWNLOAD_TESS_FOR_CURENT_ISO";
 
-    //SESNORS
-    private Sensor sensorGrav = null;
-    private Sensor sensorMag = null;
-    static final float ALPHA = 0.15f;
-    private volatile boolean isPreviewInitialized = false;
 
     private AnimationManager animationManager;
-    private String orientationModeName = null;
     private static final String ORIENTATION_MODE = "orientation_mode";
     private FrameLayout settingBtn;
+    private FrameLayout cancelLayout;
+    private Button cameraBtn;
+
 
 
     @Override
@@ -116,6 +106,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         }
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         setContentView(R.layout.camera);
+        this.addCharacterOutlinesView(CharacterBoxView.createInstant(this));
         createControlView();
         getWindow().setFormat(PixelFormat.UNKNOWN);
         // Create our Preview view and set it as the content of our activity.
@@ -126,14 +117,12 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         if (savedInstanceState != null && !savedInstanceState.isEmpty()) {
             restoreInstanceState(savedInstanceState);
         }
+
     }
 
     private void onDismissDialog(int id) {
         switch (id) {
             case DIALOG_CAMERA_FOCUS:
-                if (this.focusDialog != null) {
-                    this.focusDialog.dismiss();
-                }
                 if (this.progressDialog != null) {
                     this.progressDialog.dismiss();
                 }
@@ -141,25 +130,37 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         }
     }
 
-    private void createHandler() {
-        resultHandler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                if (msg == null) {
-                    Log.e(TAG, "Could not read message !");
-                    return;
-                }
-                switch (msg.what) {
-                    case ServiceMessenger.MSG_TAKE_PICURE:
+    public String getTexttString() {
+        return texttString;
+    }
+
+    public void setTexttString(String str ){
+        texttString = str;
+    }
+
+private static class MyHandler extends Handler{
+    CameraActivity cameraActivity;
+
+    MyHandler(CameraActivity ac){
+        cameraActivity = ac;
+    }
+    @Override
+    public void handleMessage(Message msg) {
+        if (msg == null) {
+            Log.e(TAG, "Could not read message !");
+            return;
+        }
+        switch (msg.what) {
+            case ServiceMessenger.MSG_TAKE_PICURE:
 //                        onDismissDialog(DIALOG_CAMERA_FOCUS);
-                        //animation.cancel();
+                //animation.cancel();
 //                        animationManager.stopZoomAnimation();
 
-                        takePicture();
-                        Log.d(TAG, "Get message to set enable in to the button");
-                        break;
-                    case 1:
-                        changeActivity(msg.obj, ActivityType.PICTURE_VIEW);// start PhotoActivity
+                cameraActivity.takePicture();
+                Log.d(TAG, "Get message to set enable in to the button");
+                break;
+            case ServiceMessenger.MSG_PICTURE_FROM_CAMRA:
+                cameraActivity.changeActivity(msg.obj, ActivityType.PICTURE_VIEW);// start PhotoActivity
 ////                        controlInflater = LayoutInflater.from(getBaseContext());
 ////                        getLayoutInflater().inflate(R.layout.fragment,null,false);
 //                        View viewControl = getLayoutInflater().inflate(R.layout.fragment,null,false);
@@ -172,43 +173,49 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
 //                        fragmentTransaction.add(R.id.contant, fragment);
 //                        fragmentTransaction.commit();
 
-                        break;
-                    case ServiceMessenger.MSG_CAMERA_ON_FOUCUS:
+                break;
+            case ServiceMessenger.MSG_CAMERA_ON_FOUCUS:
 //                        onDismissDialog(DIALOG_CAMERA_FOCUS);
-                        animationManager.stopZoomAnimation();
-                        setEnabledToAllButtons((msg.arg1 == 0) ? false : true);
-                        break;
-                    case 3:
-                        addCharacterOutlinesView((CharacterBoxView) msg.obj);
-                        break;
-                    case 4:
+                cameraActivity.animationManager.stopZoomAnimation();
+                cameraActivity.setEnabledToAllButtons((msg.arg1 == 0) ? false : true);
+                cameraActivity.surfaceView.destroyDrawingCache();
+                break;
+            case ServiceMessenger.MSG_OCR_BOX_VIEW:
+                cameraActivity.mPreview.removePrewievCallback();
+                cameraActivity.mPreview.closeCamera(cameraActivity.mPreview.getCamera());
+                cameraActivity.addCharacterOutlinesView((CharacterBoxView) msg.obj);
+                break;
+            case ServiceMessenger.MSG_OCR_RESULT:
 //                        mPreview.cancelAllOcrTasks();
 //                        mPreview.resetPreview();
-                        changeActivity(msg.obj, ActivityType.OCR_VIEW);// start OCR Result
-                        break;
-                    case 8:
-                        initCameraPreview();
-                        break;
-                    case 9:
-                        getMessageForNoOcrOnPreview();
-                        break;
+                cameraActivity.changeActivity(msg.obj, ActivityType.OCR_VIEW);// start OCR Result
+                break;
+            case 8:
+                cameraActivity.initCameraPreview();
+                break;
+            case 9:
+                cameraActivity.getMessageForNoOcrOnPreview();
+                break;
 
-                    case 10:
-                        if (texttString != null) {
-                            try {
-                                Log.d(TAG, "calling tts again from handler");
-                                onDifferentDeviceLanguage();
-                                TTS.getInstance().speak(texttString, false);
-                                texttString = null;
-                            } catch (Exception e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
-                            }
-                        }
-                        break;
+            case 10:
+                if (cameraActivity.getTexttString() != null) {
+                    try {
+                        Log.d(TAG, "calling tts again from handler");
+                        cameraActivity.onDifferentDeviceLanguage();
+                        TTS.getInstance().speak(cameraActivity.getTexttString(), false);
+                        cameraActivity.setTexttString(null);
+                    } catch (Exception e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 }
-            }
-        };
+                break;
+        }
+
+    }
+}
+    private void createHandler() {
+        resultHandler = new MyHandler(this);
     }
 
     /*
@@ -221,7 +228,6 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
 
             this.characterBoxView = characterBoxView;
         }
-        Log.d(TAG, "surfaceView size : width: " + surfaceView.getWidth() + ", height: " + surfaceView.getHeight());
     }
 
     private void changeActivity(Object object, String activityTyp) {
@@ -232,16 +238,17 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
             startActivity(pixScreen);
         } else {
             if (activityTyp.equals(ActivityType.OCR_VIEW)) {
-//                stopAndClosePreview();
-                Log.d(TAG, "starting result activity ");
+
                 mPreview.resetPreview();
                 ocrResult = (OcrResult) object;
-                Preferences.getInstance().putArrayData(Preferences.IMAGE_DATA, ocrResult.getImageData());
-                ocrResult.setImageData(null);
                 ocrResult.setHasImageData(true);
+                ocrResult.save();
+
+                Log.d(TAG, "persist result ocr " + ocrResult.getId());
+
                 Intent resultScreen = new Intent(getApplicationContext(), OcrResultActivity.class);
 
-                resultScreen.putExtra(OCR_RESULT_EXTRA_KEY, ocrResult);
+                resultScreen.putExtra(OCR_RESULT_EXTRA_KEY, ocrResult.getId());
                 startActivity(resultScreen);
 
             }
@@ -256,7 +263,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         surfaceView.setOnClickListener(this);
     }
 
-    private void createControlView(){
+    private void createControlView() {
         controlInflater = LayoutInflater.from(getBaseContext());
         View viewControl = controlInflater.inflate(R.layout.control, null);
         LayoutParams layoutParamsControl = new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT);
@@ -271,8 +278,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         surfaceHolder.addCallback(mPreview);
         ImageView img = (ImageView) findViewById(R.id.camera_preview_img);
         mPreview.setImageView(img);
-
-        isPreviewInitialized = true;
+        mPreview.setCharacterBoxView(this.characterBoxView);
     }
 
     /*
@@ -280,7 +286,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
      */
     private void initComponents() {
         Log.d(TAG, "init Components().....");
-        if(layoutBackground != null){
+        if (layoutBackground != null) {
             Log.d(TAG, " Components initialied already, nothing to do .....");
             return;
         }
@@ -288,53 +294,59 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         this.layoutBackground = (LinearLayout) findViewById(R.id.background);
         this.layoutBackground.setOnClickListener(this);
         this.cancelBtn = (Button) findViewById(R.id.cancel);
-        this.cancelBtn.setOnClickListener(this);
         this.runOCR = (FrameLayout) findViewById(R.id.run_ocr);
         this.runOCR.setOnClickListener(this);
         this.cameraLens = (Button) findViewById(R.id.camera_lens);
         this.cameraLens.setOnClickListener(this);
         this.settingBtn = (FrameLayout) findViewById(R.id.setting_layout);
         this.settingBtn.setOnClickListener(this);
+        this.cancelLayout =  (FrameLayout) findViewById(R.id.cancel_layout);
+        this.cancelBtn.setOnClickListener(this);
+        this.cameraBtn = (Button) findViewById(R.id.camera);
 
     }
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()){
+        switch (view.getId()) {
             case R.id.camerapreview:
                 if (componentsVisibe) {
                     componentsVisibe = false;
-                    cancelBtn.setVisibility(Button.INVISIBLE);
+                    cancelLayout.setVisibility(Button.INVISIBLE);
                     runOCR.setVisibility(Button.INVISIBLE);
+                    settingBtn.setVisibility(View.INVISIBLE);
                 } else {
                     componentsVisibe = true;
-                    cancelBtn.setVisibility(Button.VISIBLE);
+                    cancelLayout.setVisibility(Button.VISIBLE);
                     runOCR.setVisibility(Button.VISIBLE);
+                    settingBtn.setVisibility(View.VISIBLE);
                 }
                 break;
             case R.id.cancel:
-                if(mPreview.getCamera() != null){
+                cancelBtn.setEnabled(false);
+                if (mPreview.getCamera() != null) {
                     mPreview.getCamera().cancelAutoFocus();
+                }else{
+                    mPreview.openCamera();
+                    mPreview.onSurfaceChanged(mPreview.getCamera());
                 }
                 mPreview.resetPreview();
                 mPreview.cleanOcrResultList();
                 mPreview.cancelAllOcrTasks();
                 animationManager.stopZoomAnimation();
-                cameraLens.setEnabled(true);
-                cancelBtn.setEnabled(false);
+                cameraBtn.setEnabled(true);
+                ImageView img = (ImageView) findViewById(R.id.camera_preview_img);
+                img.setVisibility(View.GONE);
                 break;
             case R.id.camera_lens:
-                if (characterBoxView != null) {
+                if (this.characterBoxView != null) {
                     this.characterBoxView.resetView();
                 }
                 cancelBtn.setEnabled(true);
-                runOCR.setEnabled(false);
-                cameraLens.setEnabled(false);
+                cameraBtn.setEnabled(false);
                 setOwnerContainerSizeToPreview();
-
                 mPreview.startAutoFocus(CameraMode.Video);
-
-                animationManager.addAndStartAnimation(cameraLens);
+                animationManager.addAndStartZoomAnimation(cameraLens);
                 break;
             case R.id.setting_layout:
                 Intent intent = new Intent(this, MenuLanguagesActivity.class);
@@ -399,7 +411,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     /*
      * take camera picturenew
      */
-    private void takePicture() {
+    public void takePicture() {
         mPreview.takePicture();
     }
 
@@ -453,7 +465,8 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         Log.d(TAG, "onConfigurationChanged()  ");
         super.onConfigurationChanged(newConfig);
     }
-//    private void stopAndClosePreview() {
+
+    //    private void stopAndClosePreview() {
 //        Log.e(TAG, "stopAndClosePreview()....");
 //        if (mPreview != null) {
 //            mPreview.cancelAllOcrTasks();
@@ -473,7 +486,8 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     public void onPause() {
         Log.d(TAG, "onPause().....");
         super.onPause();
-        if(surfaceView != null) {
+        if (surfaceView != null && mPreview.getCamera() != null) {
+            mPreview.getCamera().stopPreview();
             surfaceView.setVisibility(View.GONE);
         }
     }
@@ -482,11 +496,11 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     public void onResume() {
         Log.d(TAG, "onResume..................");
         super.onResume();
-        if(surfaceView != null) {
+        if (surfaceView != null) {
             surfaceView.setVisibility(View.VISIBLE);
         }
 //            mPreview.cleanOcrResultList();
-            mPreview.resetPreview();
+        mPreview.resetPreview();
 
         this.runOCR.setEnabled(true);
         this.cancelBtn.setEnabled(false);
@@ -514,6 +528,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     public void onDestroy() {
         Log.d(TAG, "onDestroy().....isFinishing: " + isFinishing());
         super.onDestroy();
+//        TTS.getInstance().shutdown();
         if (isFinishing() && isBackPressed) {
             if (mPreview.getOcr() != null) {
                 mPreview.getOcr().clearAndCloseApi();
@@ -525,7 +540,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
             isBackPressed = false;
 
         }
-        if(isFinishing()){
+        if (isFinishing()) {
             Preferences.getInstance().putBoolean(Preferences.TTS_CHECKED_KEY, false);
         }
 
@@ -533,7 +548,6 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
             mPreview.setControllVariablesToDefault();
 
     }
-
 
 
     @Override
@@ -556,7 +570,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         savedInstanceState.putBoolean("isScreenOn", isScreenOn);
         savedInstanceState.putBoolean("isReceiveRegistered", isReceiveRegistered);
         OrientationMode orientationMode = mPreview.getOrientationMode();
-        if(orientationMode != null) {
+        if (orientationMode != null) {
             savedInstanceState.putString(ORIENTATION_MODE, orientationMode.name());
         }
     }

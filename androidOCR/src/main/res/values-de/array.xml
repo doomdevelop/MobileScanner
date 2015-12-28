@@ -17,6 +17,7 @@
     	<item>es</item>
     	<item>pl</item>
 		<item>th</item>
+		<item>kh</item>
     </string-array>
       <string-array name="ttsLanguagesArrayChooseMode">
         <item>Eine Sprache für Text-zu-Sprache auswählen</item>

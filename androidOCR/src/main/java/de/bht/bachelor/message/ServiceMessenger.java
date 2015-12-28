@@ -6,7 +6,10 @@ import android.util.Log;
 
 public class ServiceMessenger {
     public static final int MSG_TAKE_PICURE = 0;
+	public static final int MSG_PICTURE_FROM_CAMRA = 1;
     public static final int MSG_CAMERA_ON_FOUCUS = 2;
+	public static final int MSG_OCR_BOX_VIEW = 3;
+	public static final int MSG_OCR_RESULT = 4;
 	public ServiceMessenger(Handler handler) {
 		this.handler = handler;
 	}

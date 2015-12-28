@@ -199,6 +199,17 @@ public class ImageProcessing {
 
     }
 
+	public static Bitmap convertAndRotate(byte[] data, int rotate, int w , int h){
+		int[] rgb = new int[data.length];
+		ImageProcessing.decodeYUV420RGB(rgb, data, w, h);
+		Bitmap bmp = Bitmap.createBitmap(rgb, w, h, Bitmap.Config.ARGB_8888);
+//		int rotateValue = ocrResult.getRotateValue();
+		Matrix matrix = new Matrix();
+		matrix.postRotate(rotate, w / 2, h / 2);
+		bmp = Bitmap.createBitmap(bmp, 0, 0, w, h, matrix, false);
+		return bmp;
+	}
+
     private final static double[] mGrayCDF = new double[256];
 	private static final String TAG = ImageProcessing.class.getSimpleName();
 }

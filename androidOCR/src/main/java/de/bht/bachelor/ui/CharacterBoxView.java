@@ -1,8 +1,6 @@
 package de.bht.bachelor.ui;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -39,8 +37,9 @@ public class CharacterBoxView extends View {
     private Vector<Rect> propRects;
     private Rect rect;
     private Paint strokePaint;
-    private int frameWidth;
-    private int frameHeight;
+    private int frameWidth = 0;
+    private int frameHeight = 0;
+    private volatile int rotate;
 
 
     public int getRotate() {
@@ -48,14 +47,19 @@ public class CharacterBoxView extends View {
     }
 
     public void setRotate(int rotate) {
-        Log.d(TAG,"set rotate : "+rotate);
+        Log.d(TAG, "set rotate : " + rotate);
         this.rotate = rotate;
     }
 
-    private volatile int rotate;
+    public static CharacterBoxView createInstant(Context context) {
+        return new CharacterBoxView(context);
+    }
 
     public CharacterBoxView(Context context) {
         super(context);
+        this.strokePaint = PaintCreator.createStrokePaintForPreview();
+        setWidth(frameWidth);
+        setHeight(frameHeight);
         // TODO Auto-generated constructor stub
     }
 
@@ -87,16 +91,10 @@ public class CharacterBoxView extends View {
      * Set extra dimension as parameter of the display frame.
      * The proportion will be compute and the dimension of the boxes will be adapt in to the display view.
      *
-     * @param context      Application Context
-     * @param rects        List with {@link Rect} as character boxes
-     * @param width        of Frame witch was passing in to OCR
-     * @param height       of Frame witch was passing in to OCR
-     * @param displayWidth width of the displaying Frame
-     * @param displayHeigt height of the displaying Frame
      */
-    public CharacterBoxView(Context context, Vector<Rect> rects, int frameWidth, int frameHeight,  OrientationMode orientationMode) {
+    public CharacterBoxView(Context context, Vector<Rect> rects, int frameWidth, int frameHeight, OrientationMode orientationMode) {
         super(context);
-        Log.d(TAG, "Constructor CharacterBoxView: width: " + frameWidth + ",height: " + frameHeight );
+        Log.d(TAG, "Constructor CharacterBoxView: width: " + frameWidth + ",height: " + frameHeight);
         this.rects = rects;
         this.strokePaint = PaintCreator.createStrokePaintForPreview();
         setWidth(frameWidth);
@@ -106,7 +104,6 @@ public class CharacterBoxView extends View {
         this.orientationMode = orientationMode;
         strokePaint.setStrokeWidth(3);
         computeDifferenze(rects);
-//        restoreView();
         setWillNotDraw(false);
         // TODO Auto-generated constructor stub
     }
@@ -117,81 +114,44 @@ public class CharacterBoxView extends View {
      */
     private void computeDifferenze(Vector<Rect> rects) {
         Log.d(TAG, "computeDifferenze()...");
-        // float propW, propH = 0;
-        Vector<Rect> propRects = new Vector<Rect>();
-        Rect propRect = null;
 
         if (rects == null)
             throw new NullPointerException("Could not copute ");
         if (this.frameWidth == 0 || this.frameHeight == 0)
             throw new ArithmeticException("Argument 'divisor' is 0");
 
-//        if (this.displayWidth != this.frameWidth || this.displayHeight != this.frameHeight) {
-//            Log.d(TAG, "way of computing: frameWidth / displayWidth,frameWidth: " + frameWidth + ",frameHeight: " + frameHeight + ", displayWidth: " + displayWidth + ",displayHeight: " + displayHeight);
-//            propW = (float) frameWidth / displayWidth;
-//            propH = (float) frameHeight / displayHeight;
-//            /*
-//             * variables values width and height to compute the proportional coordinates of character boxes (rects)
-//			 */
-//            Log.d(TAG, "computed proportion values propW : " + propW + ", height : " + propH);
-//            if (propH == 0 || propW == 0)
-//                throw new ArithmeticException("Argument 'divisor' is 0");
-//
-//            for (Rect rect : rects) {
-//                propRect = new Rect();
-//                if (isOrientationPortrait()) {
-//
-//                }
-//                propRect.left = (int) (rect.left );
-//                propRect.right = (int) (rect.right);
-//                propRect.top = (int) (rect.top );
-//                propRect.bottom = (int) (rect.bottom );
-//                propRects.add(propRect);
-//            }
-//        } else {
-			/*
-			 * the size is the same, do not need compute proportions ,
-			 * but we use propRects for drawing so init it any way
-			 */
-            this.propRects = new Vector<Rect>(rects);
-//        }
-        if (propRect != null)
-            this.propRects = new Vector<Rect>(propRects);
+        this.propRects = new Vector<Rect>(rects);
+
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.save();
         rotate = 0;
-        Log.d(TAG, "canvas size: w= " + canvas.getWidth() + ", h= " + canvas.getHeight() + ", propH =" + propH );
-        if (rotate !=0) {
-//            positions of the character boxes are wrong, translate and rotate back canvas to fit boxes in to the display
-//             rotate *=-1;//if image passed in to ocr has been rotated 90 , we must rotate back -90
+        Log.d(TAG, "canvas size: w= " + canvas.getWidth() + ", h= " + canvas.getHeight() + ", propH =" + propH);
 
+        if (rotate != 0) {
             Matrix mtx = new Matrix();
             mtx.postRotate(rotate, frameHeight / 2, frameHeight / 2);
             canvas.setMatrix(mtx);
-
-            Log.d(TAG, "ROTATE : canvas rotate "+rotate);
-        }else{
-            Log.d(TAG, "ROTATE : canvas NOT rotate "+rotate);
+            Log.d(TAG, "ROTATE : canvas rotate " + rotate);
+        } else {
+            Log.d(TAG, "ROTATE : canvas NOT rotate " + rotate);
         }
 
-        if (propRects == null)
-            throw new NullPointerException("Could not draw propRects are NULL !");
-        for (Rect rect : propRects) {
+        if (propRects != null) {
+            for (Rect rect : propRects) {
 
-            canvas.drawRect(rect, strokePaint);
+                canvas.drawRect(rect, strokePaint);
+            }
         }
-
         super.onDraw(canvas);
-
         canvas.restore();
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w,h,oldw,oldh);
+        super.onSizeChanged(w, h, oldw, oldh);
 
         Log.d(TAG, "onSizeChanged() w: " + w + ",h: " + h + ", old w: " + oldw + ",old h: " + oldh);
     }
@@ -204,14 +164,14 @@ public class CharacterBoxView extends View {
     }
 
     public void setRects(Vector<Rect> rects) {
-        // if (!isInvisible && needChangeColor) {
         this.strokePaint.setColor(Color.GREEN);
         needChangeColor = false;
-        // }
-        if (!this.rects.equals(rects)) {
-            this.rects = rects;
-            computeDifferenze(rects);
+
+        if (this.rects != null && this.rects.equals(rects)) {
+            return;
         }
+        this.rects = rects;
+        computeDifferenze(rects);
     }
 
     public void makeVisible() {
@@ -224,9 +184,6 @@ public class CharacterBoxView extends View {
         this.strokePaint.setColor(Color.TRANSPARENT);
         isInvisible = true;
         restoreView();
-        // this.strokePaint.setColor(Color.GREEN);
-        // isInvisible = false;
-        // restoreView();
     }
 
     public void cleanView() {
@@ -249,12 +206,6 @@ public class CharacterBoxView extends View {
         super.setMinimumHeight(height);
     }
 
-    public void flipSize() {
-        int temp = getWidth();
-        setWidth(getHeight());
-        setHeight(temp);
-    }
-
     public void setFrameWidth(int frameWidth) {
         this.frameWidth = frameWidth;
     }
@@ -263,18 +214,8 @@ public class CharacterBoxView extends View {
         this.frameHeight = frameHeight;
     }
 
-
-    public OrientationMode getOrientationMode() {
-        return orientationMode;
-    }
-
     public void setOrientationMode(OrientationMode orientationMode) {
         this.orientationMode = orientationMode;
     }
-
-    private boolean isOrientationPortrait() {
-        return orientationMode == OrientationMode.PORTRAIT || orientationMode == OrientationMode.PORTRAIT_UPSIDE_DOWN;
-    }
-
 
 }

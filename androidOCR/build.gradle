@@ -37,4 +37,6 @@ dependencies {
     testCompile 'org.apache.maven:maven-ant-tasks:2.1.3'
     // fixes issue on linux/mac
     testCompile 'org.robolectric:robolectric:3.0-rc2'
+    compile 'com.michaelpardo:activeandroid:3.1.0-SNAPSHOT'
+
 }

@@ -33,6 +33,8 @@ public class ConvertUtil {
 		return bm;
 	}
 
+
+
 	public static Bitmap convertToBitmap(File f) {
 		Log.d(TAG, "Converting file to bitmap with conf 8888");
 		Log.d(TAG, "convertToBitmap().." + f.getAbsolutePath());

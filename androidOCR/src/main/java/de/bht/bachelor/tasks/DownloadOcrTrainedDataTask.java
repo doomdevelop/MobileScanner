@@ -22,16 +22,7 @@ import de.bht.bachelor.helper.NetworkHelper;
 import de.bht.bachelor.message.ServiceMessenger;
 
 /**
- * 
- * @author and
- * 
- * @param URL
- *            to download file
- * @param progress
- *            value
- * @param absolute
- *            path to the successfully downloaded file
- * 
+ *
  */
 public class DownloadOcrTrainedDataTask extends AsyncTask<URL, String, String> {
 

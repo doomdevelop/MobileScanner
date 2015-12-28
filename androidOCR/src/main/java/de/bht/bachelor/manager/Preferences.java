@@ -17,6 +17,9 @@ public class Preferences {
     public static final String TTS_CHECKED_KEY = "TTS_CHECKED_KEY";
     public static final String IMAGE_DATA = "IMAGE_DATA";
     public static final String TTS_SPINER_POSITION = "TTS_SPINER_POSITION";
+    public static final String TTS_SPINER_POSITION_TO_CHANGE = "TTS_SPINER_POSITION_TO_CHANGE";
+    public static final String OCR_SPINER_POSITION = "OCR_SPINER_POSITION";
+    public static final String OCR_SPINER_POSITION_TO_CHANGE = "OCR_SPINER_POSITION_TO_CHANGE";
     public static Preferences createInstance(Context context){
         if(instance != null) throw (new IllegalStateException("Preferences already initialized!"));
         instance = new Preferences(context);

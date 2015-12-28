@@ -19,7 +19,7 @@ import de.bht.bachelor.file.FileManager;
 import de.bht.bachelor.helper.NetworkHelper;
 import de.bht.bachelor.manager.Preferences;
 import de.bht.bachelor.message.ServiceMessenger;
-import de.bht.bachelor.tasks.DownloadOcrTraineddata;
+import de.bht.bachelor.tasks.DownloadOcrTrainedDataTask;
 import de.bht.bachelor.tts.TTS;
 
 /**
@@ -156,6 +156,7 @@ public class LanguageManager {
 			localeLanguageMap.put(locale.getISO3Language().toLowerCase(), locale);
 		}
 	}
+
 	private void initCountryCodeMapping() {
 		String[] countries = Locale.getISOCountries();
 		localeCountryMap = new HashMap<String, Locale>(countries.length);
@@ -225,26 +226,6 @@ public class LanguageManager {
 		initTtsLanguage();
 	}
 
-
-
-	private static final String por_bra = "por-bra";
-	private static final String nld_nld = "nld-nld";
-	private static final String eng_gbr=  "eng-gbr";
-	private static final String eng_usa= "eng-usa";
- 	private static final String spa_usa= "spa-usa";
-	private static final String ita_ita= "ita-ita";
-	private static final String hin_ind= "hin-ind";
-	private static final String deu_deu= "deu-deu";
-	private static final String ind_idn= "ind-idn";
-	private static final String fra_fra= "fra-fra";
-	private static final String kor_kor= "kor-kor";
-	private static final String pol_pol ="pol-pol";
-	private static final String eng_ind= "eng-ind";
-	private static final String jpn_jpn= "jpn-jpn";
-	private static final String rus_rus= "rus-rus";
-	private static final String spa_esp = "spa-esp";
-
-
 	private Locale getLocaleByIso3Language(String iso3){
 		return null;
 	}
@@ -297,6 +278,9 @@ public class LanguageManager {
 	 * @return iso3CountryCode
 	 */
 	public String iso2LanguageCodeToIso3LanguageCode(String iso2LanguageCode) {
+		if(iso2LanguageCode.equals("kh")){
+			return "khm";
+		}
 		Locale locale = new Locale(iso2LanguageCode, "");
 		return locale.getISO3Language();
 	}
@@ -359,7 +343,7 @@ public class LanguageManager {
 
 	/**
 	 * Check if device has Traineddata for given language.
-	 * If not the Traineddata will be downloaded to the right directory by download task {@link DownloadOcrTraineddata}.
+	 * If not the Traineddata will be downloaded to the right directory by download task {@link DownloadOcrTrainedDataTask}.
 	 * 
 	 * @param context
 	 *            context from current Activity
@@ -367,24 +351,24 @@ public class LanguageManager {
 	 *            Handler from current Activity.
 	 *            By this handler the download task will call Activity to start and finish the ProgressDialog.
 	 *            Also download task is using this handler to start intent of network setting if the Internet connection is off.
-	 * @see DownloadOcrTraineddata
+	 * @see DownloadOcrTrainedDataTask
 	 * @param iso3Language
 	 *            Language for Traineddata
 	 */
 	public void startDownloadTraineddata(Context context, Handler resultHandler, String iso3Language) {
 		String traineddataNameCompress;
-		String traineddataNameUncompress;
-		DownloadOcrTraineddata downloadOcrTessdata;
+		String traineddataName;
+		DownloadOcrTrainedDataTask downloadOcrTessdata;
 		try {
 			String urlStr = context.getString(R.string.traineddata_url_new);
-			traineddataNameUncompress = getTraineddataNameByLanguage(context, iso3Language, false);
-			if (!new FileManager().check(new File(Path.LANGUAGE_TRAINEDDATA_DIR + traineddataNameUncompress), false)) {
+			traineddataName = getTraineddataNameByLanguage(context, iso3Language, false);
+			if (!new FileManager().check(new File(Path.LANGUAGE_TRAINEDDATA_DIR + traineddataName), false)) {
 				if (NetworkHelper.isConnected(context)) {
-					traineddataNameCompress = getTraineddataNameByLanguage(context, iso3Language, false);
+//					traineddataNameCompress = getTraineddataNameByLanguage(context, iso3Language, false);
 					// downloadOcrTessdata = new DownloadOcrTessdata(mProgressDialog, "pol.traineddata.gz", "pol.traineddata", this.resultHandler);
-					downloadOcrTessdata = new DownloadOcrTraineddata(traineddataNameCompress, traineddataNameUncompress, resultHandler);
+					downloadOcrTessdata = new DownloadOcrTrainedDataTask(traineddataName, null, resultHandler);
 					try {
-						downloadOcrTessdata.execute(new URL(urlStr + traineddataNameCompress));
+						downloadOcrTessdata.execute(new URL(urlStr + traineddataName));
 					} catch (MalformedURLException e) {
 						Log.d(TAG, "Could not download tessdata !", e);
 					}

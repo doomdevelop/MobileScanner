@@ -439,7 +439,7 @@ public class PhotoFragment extends Fragment implements View.OnClickListener {
                 // runTestsOCR(orgBitmap, bm, rect);
                 // **********************************
                 // if (ocr == null)
-                ocr = new OCR(resultHandler);
+                ocr = new OCR();
                 orientationMode = ChangeActivityHelper.getInstance().getOrientationMode();
                 if (orientationMode == OrientationMode.PORTRAIT || orientationMode == OrientationMode.PORTRAIT_UPSIDE_DOWN) {
                     result = ocr.runWithCropped8888(new ImageProcessing().rotate(bm, 90));

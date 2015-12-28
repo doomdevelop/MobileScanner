@@ -17,7 +17,6 @@
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:name="de.bht.bachelor.OcrApplication" >
 
         <activity android:name=".activities.InitActivity"
-            android:screenOrientation="landscape"
 
             android:label="@string/app_name" android:theme="@android:style/Theme.Translucent">
             <intent-filter>
@@ -40,12 +39,19 @@
 		<activity android:name=".activities.OcrResultActivity" android:screenOrientation="landscape" ></activity>
 		<activity android:name=".activities.PhotoActivity" android:screenOrientation="landscape" ></activity>
 		<activity android:name=".activities.MenuActivity" android:screenOrientation="landscape" ></activity>
-		<activity android:name=".activities.MenuCreatorActivity" android:screenOrientation="landscape" ></activity>
+		<activity android:name=".activities.MenuCreatorActivity"></activity>
 		<activity android:name=".activities.MenuLanguagesActivity" android:screenOrientation="landscape" ></activity>
-		<activity android:name=".activities.CheckLanguageActivity" android:screenOrientation="landscape" ></activity>
+		<activity android:name=".activities.CheckLanguageActivity" ></activity>
 		<activity android:name=".activities.ImagePreprocesingSettingActivity" android:screenOrientation="landscape" ></activity>
-		<!--<service-->
+
+        <!--<service-->
       		<!--android:name=".services.PreprocessingService">-->
     <!--</service>-->
+
+        <meta-data android:name="OCR_DATABASE" android:value="ocrandroid.db" />
+        <meta-data android:name="version" android:value="1" />
+        <meta-data
+            android:name="OCR_MODELS"
+            android:value="de.bht.bachelor.OcrResult" />
     </application>
 </manifest>

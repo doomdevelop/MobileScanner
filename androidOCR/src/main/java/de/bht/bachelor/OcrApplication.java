@@ -14,7 +14,7 @@ import de.bht.bachelor.tts.TTS;
 /**
  * Created by and on 11.01.15.
  */
-public class OcrApplication extends Application implements PreferenceManager.OnActivityDestroyListener {
+public class OcrApplication extends com.activeandroid.app.Application implements PreferenceManager.OnActivityDestroyListener {
     private static final String TAG = OcrApplication.class.getSimpleName();
     @Override
     public void onActivityDestroy() {

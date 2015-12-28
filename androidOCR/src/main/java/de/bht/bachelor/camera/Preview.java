@@ -13,8 +13,6 @@ import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.PreviewCallback;
-import android.os.AsyncTask;
-import android.os.Debug;
 import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -36,17 +34,17 @@ import java.util.List;
 import java.util.Vector;
 
 import de.beutch.bachelorwork.util.file.FileUtil;
-import de.bht.bachelor.activities.CameraActivity;
 import de.bht.bachelor.beans.OcrResult;
 import de.bht.bachelor.graphic.transform.ImageProcessing;
 import de.bht.bachelor.helper.ActivityType;
 import de.bht.bachelor.helper.CameraFlashState;
 import de.bht.bachelor.helper.ChangeActivityHelper;
 import de.bht.bachelor.helper.MenuSettingHelper;
-import de.bht.bachelor.language.LanguageManager;
 import de.bht.bachelor.message.ServiceMessenger;
 import de.bht.bachelor.ocr.OCR;
 import de.bht.bachelor.setting.AppSetting;
+import de.bht.bachelor.tasks.OcrTaskResultCallback;
+import de.bht.bachelor.tasks.SendFrameToOcrTasc;
 import de.bht.bachelor.ui.CharacterBoxView;
 
 /**
@@ -74,7 +72,7 @@ public class Preview implements SurfaceHolder.Callback {
     private int previewbpp;// BytesPerPixel
     private final SurfaceHolder surfaceHolder;
     private Camera camera = null;
-    private List<SendFrameToOCRTasc> ocrTacks = new ArrayList<SendFrameToOCRTasc>();
+    private List<SendFrameToOcrTasc> ocrTacks = new ArrayList<SendFrameToOcrTasc>();
 
     private int buffer;
     /* For video mode, if true the next frame can be set to OCR by starting new SendFrameToOCRTasc */
@@ -109,36 +107,25 @@ public class Preview implements SurfaceHolder.Callback {
      */
     private volatile boolean waitForCameraFocus = false;
     private ImageProcessing imageProcessing;
-
-    public void setImageView(ImageView imageView) {
-        this.imageView = imageView;
-    }
-
     private ImageView imageView;
-
+    private final static int NUMBER_OF_OCR_RUN = 1;
 
     public Preview(Activity context, SurfaceHolder surfaceHolder) {
         this.surfaceHolder = surfaceHolder;
         this.context = context;
     }
+
     public void removePrewievCallback() {
         Log.d(TAG, " removePreviewCallback()..");
-        if (camera != null && !this.camerReleased){
+        if (camera != null && !this.camerReleased) {
+            this.firstInitVideoCall = true;
             camera.setPreviewCallback(null);
             camera.setPreviewCallbackWithBuffer(null);
         }
     }
 
-    public void restartHolder(SurfaceHolder holder){
-        openCamera();
-        try {
-            camera.setPreviewDisplay(holder);
-        } catch (IOException e) {
-            Log.e(TAG,"could not restart Holder ",e);
-        }
-    }
     public void closeCamera(Camera camera) {
-        if(camera == null || camerReleased){
+        if (camera == null || camerReleased) {
             return;
         }
         synchronized (camera) {
@@ -146,7 +133,7 @@ public class Preview implements SurfaceHolder.Callback {
             camerReleased = true;
             camera.stopPreview();
             camera.release();
-            camera = null;
+            this.camera = null;
         }
     }
 
@@ -174,7 +161,7 @@ public class Preview implements SurfaceHolder.Callback {
             if (camera != null) {
                 closeCamera(this.camera);
             }
-           openCamera();
+            openCamera();
             Log.d(TAG, "seting preview display");
             camera.setPreviewDisplay(holder);
 
@@ -221,7 +208,7 @@ public class Preview implements SurfaceHolder.Callback {
         onSurfaceChanged(camera);
     }
 
-    private void onSurfaceChanged(Camera camera) {
+    public void onSurfaceChanged(Camera camera) {
         Log.d(TAG, "onSurfaceChanged()");
         Camera.Parameters params = camera.getParameters();
 
@@ -260,8 +247,8 @@ public class Preview implements SurfaceHolder.Callback {
 
     public void setRestoredOrientatiomMode(OrientationMode orientationMode) {
         Log.d(TAG, "setRestoredOrientatiomMode()..");
-        if(this.orientationMode != null){
-           getRotateByNewOrientationMode(orientationMode);
+        if (this.orientationMode != null) {
+            getRotateByNewOrientationMode(orientationMode);
         }
         this.orientationMode = orientationMode;
     }
@@ -311,7 +298,7 @@ public class Preview implements SurfaceHolder.Callback {
                 Log.d(TAG, "ROTATION_270");
                 break;
         }
-        Log.d(TAG, " orientationMode : " + Preview.this.orientationMode.name()+ " display rotation: "+degrees);
+        Log.d(TAG, " orientationMode : " + Preview.this.orientationMode.name() + " display rotation: " + degrees);
         getRotateByNewOrientationMode(null);
         int result;
         if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
@@ -475,9 +462,9 @@ public class Preview implements SurfaceHolder.Callback {
         return camerReleased;
     }
 
-    public void openCamera(){
-        Log.d(TAG,"camer is null : "+(camera==null)+", camerReleased= "+camerReleased);
-        if(camerReleased){
+    public void openCamera() {
+        Log.d(TAG, "camer is null : " + (camera == null) + ", camerReleased= " + camerReleased);
+        if (camerReleased) {
             Log.e(TAG, "open camera()...");
             camera = Camera.open();
             camerReleased = false;
@@ -495,10 +482,11 @@ public class Preview implements SurfaceHolder.Callback {
         if (ocrTacks == null) {
             return;
         }
-        synchronized (this) {
-            for (SendFrameToOCRTasc ocrTasc : ocrTacks) {
+        synchronized (ocrTacks) {
+            for (SendFrameToOcrTasc ocrTasc : ocrTacks) {
                 if (ocrTasc != null && !ocrTasc.isCancelled()) {
                     ocrTasc.cancel(true);
+                    Log.d(TAG, "Canceled task " + ocrTasc.getStatus().name());
                 }
             }
             ocrTacks.clear();
@@ -532,14 +520,12 @@ public class Preview implements SurfaceHolder.Callback {
 
                             waitForCameraFocus = false;
                             freeFrame = true;
-                            // we start new focus, it could be new picture contend,clean the list and collect new 3 results
+                            // we start new focus, it could be new picture contend,clean the list and collect new  results
                             cleanOcrResultList();
 
                             if (firstInitVideoCall) {
                                 camera.addCallbackBuffer(new byte[buffer]);
                                 camera.setPreviewCallbackWithBuffer(previewCallback);
-
-
                                 firstInitVideoCall = false;
                             }
 
@@ -554,9 +540,7 @@ public class Preview implements SurfaceHolder.Callback {
                 Log.d(TAG, "Could not get camera focus", ex);
             }
         }
-
     };
-
 
     /**
      * Using during photo modus : currentCameraMode == CameraMode.Photo
@@ -569,6 +553,7 @@ public class Preview implements SurfaceHolder.Callback {
             ChangeActivityHelper.getInstance().setRawPicture(data);
             ChangeActivityHelper.getInstance().setOrientationMode(orientationMode);
             serviceMessenger = new ServiceMessenger(resultHandler);
+
             serviceMessenger.sendMessage(0, 1, ActivityType.PICTURE_VIEW);
         }
     };
@@ -619,11 +604,20 @@ public class Preview implements SurfaceHolder.Callback {
 
                 Log.d(TAG, "frame width : " + w + ", hight : " + h + ", ocrResultList.size(): " + ocrResultList.size() + " rotate: " + rotate + " orient mode: " + Preview.this.orientationMode.name());
 
-                if (freeFrame && ocrResultList.size() < 3) {
+                if (freeFrame && ocrResultList.size() < NUMBER_OF_OCR_RUN) {
 
-                    SendFrameToOCRTasc sendFrameToOCRTasc = new SendFrameToOCRTasc(w, h, Preview.this.rotate, orientationMode);
-                    sendFrameToOCRTasc.execute(contrastData != null ? contrastData : data);
-                    ocrTacks.add(sendFrameToOCRTasc);
+                    if (rotate != 0) {
+                        Bitmap b  = ImageProcessing.convertAndRotate(data,rotate, h, w);
+                        imageView.setImageBitmap(b);
+                    } else {
+                        int[] rgb = new int[data.length];
+                        ImageProcessing.decodeYUV420RGB(rgb, data, w, h);
+                        imageView.setImageBitmap(Bitmap.createBitmap(rgb, w, h, Bitmap.Config.ARGB_8888));
+                    }
+                    imageView.setVisibility(View.VISIBLE);
+                    SendFrameToOcrTasc sendFrameToOcrTasc = new SendFrameToOcrTasc(w, h, bpp, Preview.this.rotate, context, orientationMode, ocrTaskResultCallback);
+                    sendFrameToOcrTasc.execute(contrastData != null ? contrastData : data);
+                    ocrTacks.add(sendFrameToOcrTasc);
 
                 } else {
                     Log.d(TAG, "Can not start OCR task ! freeFrame: " + freeFrame + " ocrResultList size: " + ocrResultList.size());
@@ -641,109 +635,31 @@ public class Preview implements SurfaceHolder.Callback {
         FileUtil.saveOrginalData(data, w, h);
     }
 
-
-    /*
-     * Calling OCR with the picture frame as byte[],
-     * getting result with boxes with are add in to the preview.
-     */
-    private class SendFrameToOCRTasc extends AsyncTask<byte[], Void, Vector<Rect>> {
-        private int rotateValue;
-        private final OrientationMode om;
-        private  int w;
-        private  int h;
-        public SendFrameToOCRTasc(int w, int h, final int rotateValue, final OrientationMode om) {
-            this.rotateValue = rotateValue;
-            this.om = om;
-            if (Preview.this.isOrientationPortrait()) {
-                this.w = h;
-                this.h = w;
-                Log.d(TAG, "imageView size w: " + imageView.getWidth() + ", h: " + imageView.getHeight());
-            } else {
-                this.w = w;
-                this.h = h;
-            }
-            imageView.setVisibility(View.INVISIBLE);
-        }
-
+    private OcrTaskResultCallback ocrTaskResultCallback = new OcrTaskResultCallback() {
         @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
+        public void onOcrTaskPreExecute() {
+//            imageView.setVisibility(View.INVISIBLE);
             freeFrame = false;
-            Log.d(TAG, "onPreExecute()...");
         }
 
         @Override
-        protected Vector<Rect> doInBackground(byte[]... arg0) {
-            Log.d(TAG, "----- doInBackground() ---- ");
-            Vector<Rect> boxes = null;
-            OcrResult ocrResult = null;
-            Pix pix = null;
-
-            if (arg0[0] == null) {
-                Log.e(TAG, "raw picture data is null !");
-                return null;
-            }
-            byte[] data = new byte[arg0[0].length];
-            System.arraycopy(arg0[0], 0, data, 0, arg0[0].length);
-
-            if (isCancelled()) {
-                return null;
-            }
-            onStartOCR();
-            Bitmap bitmap = null;
-            Log.d(TAG, "will rotate " + rotateValue + " orientation=  " + Preview.this.orientationMode.name() + " w= " + this.w + " h= " + this.h);
-            if (rotateValue != 0) {
-
-                pix = ocr.convertToPix(data, this.w, this.h);
-                bitmap = WriteFile.writeBitmap(pix);
-            int    width = bitmap.getWidth();
-             int   height = bitmap.getHeight();
-                Log.d(TAG, "bitmap getWidth " + width + " getHeight: " + height);
-                // Setting pre rotate
-                Matrix mtx = new Matrix();
-                mtx.postRotate(rotateValue, width / 2, height / 2);
-                // Rotating Bitmap & convert to ARGB_8888, required by tess
-                bitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, mtx, false);
-                bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-                Log.d(TAG, "bitmap getWidth " + bitmap.getWidth() + " getHeight: " + bitmap.getHeight());
-
-                final Bitmap finalBitmap = bitmap;//Bitmap.createBitmap(bitmap, 0, 0, w, h);
-
-                if (ocr != null && ocr.isApiCreated()) {
-                    ocrResult = ocr.runTessWithData2(data, finalBitmap, this.w, this.h, bpp, bpp * this.w);
-                }
-            } else {
-                if (ocr != null && ocr.isApiCreated()) {
-                    CameraActivity cameraActivity = (CameraActivity) context;
-                    cameraActivity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            imageView.setVisibility(View.GONE);
-                        }
-                    });
-
-                    ocrResult = ocr.runTessWithData2(data, null, this.w, this.h, bpp, bpp * this.w);
-                }
-                if (ocrResult != null) {
-                    if (rotateValue != 0) {
-                        ocrResult.setLandscape(false);
-                    } else {
-                        ocrResult.setLandscape(true);
-                    }
+        public void onOcrTaskResultCallback(OcrResult ocrResult) {
+            int w = ocrResult.getW();
+            int h = ocrResult.getH();
+            if (ocrResult != null) {
+                ocrResultList.add(ocrResult);
+                if (ocrResult.getRotateValue() != 0) {
+                    ocrResult.setLandscape(false);
+                } else {
+                    ocrResult.setLandscape(true);
                 }
             }
-            ocrResult.setRotateValue(this.rotateValue);
-            ocrResultList.add(ocrResult);
-            boxes = new Vector<Rect>(ocrResult.getBoxes());
+            ocrResult.setRotateValue(ocrResult.getRotateValue());
+            Vector<Rect> boxes = new Vector<Rect>(ocrResult.getBoxes());
             if (boxes != null) {
                 Log.d(TAG, "returning " + boxes.size() + " boxes");
             }
-            return boxes;
-        }
 
-        @Override
-        protected void onPostExecute(Vector<Rect> boxes) {
-            Log.d(TAG, "----- onPostExecute()------");
             if (boxes == null || (boxes != null && boxes.isEmpty())) {
                 Log.d(TAG, "Could not get the boxes, run again. THREAD ID: " + Thread.currentThread().getId());
 
@@ -753,46 +669,47 @@ public class Preview implements SurfaceHolder.Callback {
                 return;
             }
             Log.d(TAG, "THREAD ID: " + Thread.currentThread().getId());
-            if (this.om == OrientationMode.PORTRAIT || this.om == OrientationMode.PORTRAIT_UPSIDE_DOWN) {
-                int temp = w;
-                this.w = h;
-                this.h = temp;
+            if (orientationMode == OrientationMode.PORTRAIT || orientationMode == OrientationMode.PORTRAIT_UPSIDE_DOWN) {
+                int temp = ocrResult.getW();
+                w = ocrResult.getH();
+                h = temp;
             }
             if (characterBoxView == null) {
-                createCharacterBoxView(new Vector<Rect>(boxes), this.w, this.h);
+                throw new NullPointerException("CharacterBoxView has value null!");
             }
 
-            characterBoxView.setOrientationMode(om);
-            characterBoxView.setRotate(rotateValue);
-            characterBoxView.setWidth(w);
+            characterBoxView.setOrientationMode(orientationMode);
+            characterBoxView.setRotate(ocrResult.getRotateValue());
+
             characterBoxView.setHeight(h);
+            characterBoxView.setWidth(w);
             characterBoxView.setFrameHeight(h);
             characterBoxView.setFrameWidth(w);
             characterBoxView.setRects(new Vector<Rect>(boxes));
             characterBoxView.restoreView();
 
-            if (ocrResultList.size() >= 3) {
-                OcrResult ocrResult = findBestResult();
-                if (ocrResult != null) {
+            if (ocrResultList.size() >= NUMBER_OF_OCR_RUN) {
+                OcrResult bestOcrResult = findBestResult();
+                if (bestOcrResult != null) {
                     Log.d(TAG, "GET BEST RESULT,WILL FINISHING VIDEO CALLBACK AND START RESULT ACTIVITY !");
                     freeFrame = false;
-
                     serviceMessenger = new ServiceMessenger(resultHandler);
-                    serviceMessenger.sendMessage(1, 4, ocrResult);
+                    serviceMessenger.sendMessage(1, ServiceMessenger.MSG_OCR_RESULT, bestOcrResult);
                 } else {
+                    freeFrame = false;
                     cleanOcrResultList();
                     cancelAllOcrTasks();
-
+//                    imageView.setVisibility(View.GONE);
                 }
             }
 
 
             serviceMessenger = new ServiceMessenger(resultHandler);
-            serviceMessenger.sendMessage(0, 3, characterBoxView);// set enable=true to the button
+            serviceMessenger.sendMessage(0, ServiceMessenger.MSG_OCR_BOX_VIEW, characterBoxView);// set enable=true to the button
 
             if (!waitForCameraFocus) {
                 // is not waiting for camera focus , so can run next task
-                freeFrame = true;
+                freeFrame = false;
             } else {
                 Log.d(TAG, "is waiting , do not run a task, give a space to make new focus");
                 freeFrame = false;
@@ -800,31 +717,15 @@ public class Preview implements SurfaceHolder.Callback {
             Log.d(TAG, "----- return onPostExecute()------");
         }
 
-        private OcrResult findBestResult() {
-            OcrResult ocrResultBest = null;
-            for (OcrResult ocrResult : ocrResultList) {
-                if (ocrResultBest == null) {
-                    ocrResultBest = ocrResult;
-                } else {
-                    if (ocrResultBest.getMeanConfidences() < ocrResult.getMeanConfidences() && ocrResult.getResult().length() > 0) {
-                        ocrResultBest = ocrResult;
-                    }
-                }
-            }
-            if (ocrResultBest.getMeanConfidences() < 80 || ocrResultBest.getResult().length() <= 0)
-                return null;
-            return ocrResultBest;
-        }
-
         @Override
-        protected void onCancelled() {
-            Log.d(TAG, "---- On Cancelled -----");
-
+        public void onTrainDataerror() {
+            serviceMessenger.sendMessage(0, 9, null);
         }
-    }
+    };
+
 
     private void getRotateByNewOrientationMode(OrientationMode orientationMode) {
-        Log.d(TAG, "-------- getRotateByNewOrientationMode -------- " );
+        Log.d(TAG, "-------- getRotateByNewOrientationMode -------- ");
         if (orientationMode == null) {
             switch (this.orientationMode) {
                 case LANDSCAPE_UPSIDE_DOWN:
@@ -839,7 +740,7 @@ public class Preview implements SurfaceHolder.Callback {
                 case LANDSCAPE:
                     rotate = 0;
             }
-            return ;
+            return;
         }
         Log.d(TAG, "getRotateByNewOrientationMode new: " + orientationMode.name + ", old: " + this.orientationMode.name + " rotate: " + rotate);
         if (this.orientationMode == orientationMode) {
@@ -903,6 +804,22 @@ public class Preview implements SurfaceHolder.Callback {
         Log.d(TAG, "---- getRotateByNewOrientationMode ----- END " + orientationMode.name + ", old: " + this.orientationMode.name + " rotate: " + rotate);
     }
 
+    private OcrResult findBestResult() {
+        OcrResult ocrResultBest = null;
+        for (OcrResult ocrResult : ocrResultList) {
+            if (ocrResultBest == null) {
+                ocrResultBest = ocrResult;
+            } else {
+                if (ocrResultBest.getMeanConfidences() < ocrResult.getMeanConfidences() && ocrResult.getResult().length() > 0) {
+                    ocrResultBest = ocrResult;
+                }
+            }
+        }
+        if (ocrResultBest.getMeanConfidences() < 80 || ocrResultBest.getResult().length() <= 0)
+            return null;
+        return ocrResultBest;
+    }
+
     /**
      * @param orientationModeNew
      */
@@ -936,7 +853,7 @@ public class Preview implements SurfaceHolder.Callback {
      */
     public void setControllVariablesToDefault() {
         Log.d(TAG, "setControllVariablesToDefault()...");
-        freeFrame = true;
+        freeFrame = false;
         waitForCameraFocus = false;
         firstInitVideoCall = true;
     }
@@ -963,26 +880,6 @@ public class Preview implements SurfaceHolder.Callback {
      */
     public void cleanOcrResultList() {
         ocrResultList.clear();
-    }
-
-    private synchronized void onStartOCR() {
-        if (ocr == null || (ocr != null && !ocr.isApiCreated())) {
-            LanguageManager languageManager = null;
-//            try {
-            languageManager = AppSetting.getInstance().getLanguageManager();
-//            } catch (NullPointerException ex) {
-//                AppSetting.getInstance().initLanguageMenager(context);
-//                languageManager = AppSetting.getInstance().getLanguageManager();
-//            }
-            if (languageManager.checkTraineddataForCurrentLanguage(context))
-                ocr = new OCR(resultHandler);
-            else
-                serviceMessenger.sendMessage(0, 9, null);
-        }
-    }
-
-    private void createCharacterBoxView(Vector<Rect> rects, int w, int h) {
-        this.characterBoxView = new CharacterBoxView(context, rects, w, h, orientationMode);
     }
 
     /**
@@ -1051,4 +948,11 @@ public class Preview implements SurfaceHolder.Callback {
     }
 
 
+    public void setImageView(ImageView imageView) {
+        this.imageView = imageView;
+    }
+
+    public void setCharacterBoxView(CharacterBoxView characterBoxView) {
+        this.characterBoxView = characterBoxView;
+    }
 }

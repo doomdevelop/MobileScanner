@@ -212,9 +212,7 @@ public class InitActivity extends Activity {
 
                         Log.d(TAG, "Key: " + key + " = " + bundle.get(key));
                     }
-
                 }
-
                 if (data.hasExtra("availableVoices")) {
                     ttsEngineList.get(requestCode).setAvailableLanguages(data.getStringArrayListExtra("availableVoices"));
                 } else {
@@ -272,15 +270,12 @@ public class InitActivity extends Activity {
                                     }
                                 }
                             }
-
                         }else if(i == TextToSpeech.ERROR){
                             confirmDialog();
                         }
                     }
                 });
-
             }
-
         } catch (final IndexOutOfBoundsException e) {
             Log.e(TAG, "IndexOutOfBoundsException", e);
             e.printStackTrace();

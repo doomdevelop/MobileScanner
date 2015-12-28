@@ -64,7 +64,11 @@ public class TTS {
             if (this.tts.isSpeaking()) {
                 this.tts.stop();
             }
-            this.tts.shutdown();
+            try {
+                this.tts.shutdown();
+            }catch(IllegalArgumentException ex){
+                Log.e(TAG, "error during tts.shutdown().." +ex.getMessage());
+            }
         }
 
         this.tts = tts;
@@ -85,27 +89,6 @@ public class TTS {
             if (tts.isSpeaking())
                 tts.stop();
         }
-//        int res = tts.isLanguageAvailable(loc);
-//        switch (res) {
-//
-//            case TextToSpeech.LANG_AVAILABLE:
-//                Log.e(TAG, "*********LANG_AVAILABLE*************");
-//                break;
-//            case TextToSpeech.LANG_COUNTRY_AVAILABLE:
-//                Log.e(TAG, "*********LANG_COUNTRY_AVAILABLE*************");
-//                break;
-//            case TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE:
-//                Log.e(TAG, "*********LANG_COUNTRY_VAR_AVAILABLE*************");
-//                break;
-//            case TextToSpeech.LANG_MISSING_DATA:
-//                Log.e(TAG, "*********LANG_MISSING_DATA*************");
-//                break;
-//            case TextToSpeech.LANG_NOT_SUPPORTED:
-//                Log.e(TAG, "*********LANG_NOT_SUPPORTED*************");
-//                break;
-//
-//
-//        }
 
         result = this.tts.setLanguage(loc);
 
@@ -174,13 +157,14 @@ public class TTS {
         if (text == null) {
             throw new NullPointerException("text has value null !");
         }
-        if (speechOcrResult && tts.isSpeaking()) {
+        if (tts.isSpeaking()) {
             restoreSpeach = true;
             tts.stop();
         }
+        myHashSpeech.clear();
+        myHashSpeech.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, this.endOfOcrResultSpeech);
+
         if (speechOcrResult) {
-            myHashSpeech.clear();
-            myHashSpeech.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, this.endOfOcrResultSpeech);
             if (restoreSpeach) {
                 // some speech was just interrupted, give short break before next speak
                 makeBreak(500);
@@ -194,18 +178,8 @@ public class TTS {
                 restoreSpeach = false;
             }
         } else {
-            if (tts.isSpeaking()) {
-                int stop = tts.stop();
-            }
-            myHashSpeech.clear();
-            myHashSpeech.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, this.endOfToolTipsToSpeech);
-
             tts.speak(text, TextToSpeech.QUEUE_ADD, myHashSpeech);
-//            } else {
-//                Log.d(TAG, "could not call api to speek, tts is speaking now ");
-//            }
         }
-
     }
 
     private void makeBreak(long sleeTime) {

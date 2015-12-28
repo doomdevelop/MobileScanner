@@ -84,7 +84,7 @@ public class SendFrameToOcrTasc extends AsyncTask<byte[], Void, OcrResult> {
 //        Log.d(TAG, "will rotate " + rotateValue + " orientation=  " + Preview.this.orientationMode.name() + " w= " + this.w + " h= " + this.h);
         if (rotateValue != 0) {
 
-            pix = ocr.convertToPix(data, this.w, this.h);
+            pix = OCR.convertToPix(data, this.w, this.h);
             bitmap = WriteFile.writeBitmap(pix);
             int width = bitmap.getWidth();
             int height = bitmap.getHeight();
@@ -115,8 +115,11 @@ public class SendFrameToOcrTasc extends AsyncTask<byte[], Void, OcrResult> {
     @Override
     protected void onPostExecute(OcrResult ocrResult) {
         Log.d(TAG, "----- onPostExecute()------");
-        this.ocrTaskResultCallback.onOcrTaskResultCallback(ocrResult);
-
+        ocr.clearAndCloseApi();
+        ocr = null;
+        if(!isCancelled()) {
+            this.ocrTaskResultCallback.onOcrTaskResultCallback(ocrResult);
+        }
     }
     private  void onStartOCR() {
         if (ocr == null || (ocr != null && !ocr.isApiCreated())) {
