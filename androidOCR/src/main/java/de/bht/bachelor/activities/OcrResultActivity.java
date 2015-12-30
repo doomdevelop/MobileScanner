@@ -6,7 +6,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -35,8 +34,6 @@ import java.util.List;
 
 import de.bht.bachelor.R;
 import de.bht.bachelor.beans.OcrResult;
-import de.bht.bachelor.graphic.transform.ImageProcessing;
-import de.bht.bachelor.manager.Preferences;
 import de.bht.bachelor.tts.TTS;
 import de.bht.bachelor.ui.fragments.OcrResultImagePageFragment;
 
@@ -99,7 +96,6 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
                 try {
 
                     getVibrator().vibrate(VIBRATE_DURATION);
-//					onDifferentDeviceLanguage();
                     TTS.getInstance().speak(getString(R.string.speak), false);
                 } catch (Exception e) {
                     // TODO Auto-generated catch block
@@ -115,32 +111,15 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
         viewPager = (ViewPager) findViewById(R.id.view_pager);
         pagerAdapter = new CustomScreenSlideAdapter(getSupportFragmentManager());
         viewPager.setAdapter(pagerAdapter);
+        Intent i = getIntent();
+        Long id = i.getLongExtra(CameraActivity.OCR_RESULT_EXTRA_KEY, -1);
+        List<OcrResult> results = OcrResult.getOcrResultByid(id);
+        Log.d(TAG, "result size: " + results.size() + " from ID " + id);
+        this.ocrResult = results.get(0);
         setTextOcrResult();
-        if (ocrResult != null) {
-            if (ocrResult.isHasImageData()) {
-                Bitmap bmp = null;
 
-                byte[] data = ocrResult.getImageData();
-                if (ocrResult.isLandscape()) {
-                    int[] rgb = new int[data.length];
-                    ImageProcessing.decodeYUV420RGB(rgb, data, ocrResult.getW(), ocrResult.getH());
-                    bmp = Bitmap.createBitmap(rgb, ocrResult.getW(), ocrResult.getH(), Bitmap.Config.ARGB_8888);
-                } else {
-//                    bmp = OcrResult.convertDataToBitmap(data);
-//
-//                    int[] rgb = new int[data.length];
-//                    ImageProcessing.decodeYUV420RGB(rgb, data, ocrResult.getW(), ocrResult.getH());
-//                    bmp = Bitmap.createBitmap(rgb, ocrResult.getW(), ocrResult.getH(), Bitmap.Config.ARGB_8888);
-//                    int rotateValue = ocrResult.getRotateValue();
-//                    Matrix matrix = new Matrix();
-//                    matrix.postRotate(rotateValue, ocrResult.getW() / 2, ocrResult.getH() / 2);
-//                    bmp = Bitmap.createBitmap(bmp, 0, 0, ocrResult.getW(), ocrResult.getH(), matrix, false);
-                    bmp = ImageProcessing.convertAndRotate(data,ocrResult.getRotateValue(), ocrResult.getW(), ocrResult.getH());
-                }
-                slides.add(OcrResultImagePageFragment.newInstance(bmp));
-                pagerAdapter.notifyDataSetChanged();
-            }
-        }
+        slides.add(OcrResultImagePageFragment.newInstance());
+        pagerAdapter.notifyDataSetChanged();
         Button copy = (Button) findViewById(R.id.copy_to_clipboard);
         copy.setOnClickListener(new OnClickListener() {
             @Override
@@ -327,12 +306,6 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
     }
 
     private void setTextOcrResult() {
-
-        Intent i = getIntent();
-        Long id = i.getLongExtra(CameraActivity.OCR_RESULT_EXTRA_KEY, -1);
-        List<OcrResult> results = OcrResult.getOcrResultByid(id);
-        Log.d(TAG,"result size: "+results.size()+" from ID "+id);
-        this.ocrResult = results.get(0);
         ocrResultText = ocrResult.getResult();
         Log.d(TAG, "receive result text from OCR :");
         Log.d(TAG, ocrResultText);
@@ -452,4 +425,9 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
             return slides.size();
         }
     }
+
+    public OcrResult getOcrResult() {
+        return ocrResult;
+    }
+
 }

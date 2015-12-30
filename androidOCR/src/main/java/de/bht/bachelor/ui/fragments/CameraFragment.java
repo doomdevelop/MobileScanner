@@ -58,11 +58,6 @@ public class CameraFragment  extends Fragment implements View.OnClickListener{
         return view;
     }
 
-
-    public void changeOrientation(OrientationMode configuration){
-        this.mPreview.changeOrientation(configuration);
-
-    }
     @Override
     public void onResume() {
         super.onResume();

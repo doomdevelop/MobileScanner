@@ -245,14 +245,6 @@ public class Preview implements SurfaceHolder.Callback {
         return orientationMode;
     }
 
-    public void setRestoredOrientatiomMode(OrientationMode orientationMode) {
-        Log.d(TAG, "setRestoredOrientatiomMode()..");
-        if (this.orientationMode != null) {
-            getRotateByNewOrientationMode(orientationMode);
-        }
-        this.orientationMode = orientationMode;
-    }
-
     public void setCameraDisplayOrientation(Activity activity, int cameraId, android.hardware.Camera camera) {
         android.hardware.Camera.CameraInfo info =
                 new android.hardware.Camera.CameraInfo();
@@ -815,37 +807,11 @@ public class Preview implements SurfaceHolder.Callback {
                 }
             }
         }
-        if (ocrResultBest.getMeanConfidences() < 80 || ocrResultBest.getResult().length() <= 0)
+        if (ocrResultBest.getMeanConfidences() < 60 || ocrResultBest.getResult().length() <= 0)
             return null;
         return ocrResultBest;
     }
 
-    /**
-     * @param orientationModeNew
-     */
-    public void changeOrientation(OrientationMode orientationModeNew) {
-        int rotateNew;
-        if (orientationModeNew == null) {
-            return;
-        }
-//        if (this.orientationMode == null) {
-//            this.orientationMode = orientationModeNew;
-//            rotate = 0;
-//            return;
-//        }
-        if (this.orientationMode == orientationModeNew) {
-            return;
-        }
-        if ((this.orientationMode == OrientationMode.LANDSCAPE || this.orientationMode == OrientationMode.LANDSCAPE_UPSIDE_DOWN) && (orientationMode == OrientationMode.PORTRAIT || orientationMode == OrientationMode.PORTRAIT_UPSIDE_DOWN)) {
-            Log.d(TAG, "change Orintation to PORTRAIT");
-        } else if ((this.orientationMode == OrientationMode.PORTRAIT || this.orientationMode == OrientationMode.PORTRAIT_UPSIDE_DOWN) && (orientationMode == OrientationMode.LANDSCAPE || orientationMode == OrientationMode.LANDSCAPE_UPSIDE_DOWN)) {
-            Log.d(TAG, "change Orintation to LANDSCAPE");
-        }
-
-        getRotateByNewOrientationMode(orientationModeNew);
-
-        this.orientationMode = orientationModeNew;
-    }
 
     /**
      * Control variables are for controlling new task with are calling OCR
@@ -865,15 +831,6 @@ public class Preview implements SurfaceHolder.Callback {
         return orientationMode == OrientationMode.PORTRAIT || orientationMode == OrientationMode.PORTRAIT_UPSIDE_DOWN;
     }
 
-    /*
-     * Switch width , height by orientation changed
-     */
-    private void onOrientationChanged() {
-        Log.d(TAG, "onOrientationChanged()");
-        int tempW = w;
-        w = h;
-        h = tempW;
-    }
 
     /**
      * Clean the List with the Result from OCR calls
