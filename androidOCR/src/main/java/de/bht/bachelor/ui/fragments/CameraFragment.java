@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import de.bht.bachelor.R;
@@ -53,7 +54,7 @@ public class CameraFragment  extends Fragment implements View.OnClickListener{
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         view = inflater.inflate(R.layout.camera_fragment, container, false);
-        Log.d(TAG," onCreateView()..");
+        Log.d(TAG, " onCreateView()..");
         initLayout();
         return view;
     }
@@ -99,28 +100,21 @@ public class CameraFragment  extends Fragment implements View.OnClickListener{
 
     private void initLayout(){
 
-        initSurfaceHolder();
         initComponents();
         initCameraPreview();
     }
-    private void initSurfaceHolder() {
-        surfaceView  = (SurfaceView) getView().findViewById(R.id.camera_surface_view);
-        surfaceHolder = surfaceView.getHolder();
 
-        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        // SURFACE_TYPE_NORMA
-        surfaceView.setOnClickListener(this);
-    }
 
-    public void initCameraPreview() {
-        if(mPreview != null){
-            return;
-        }
+    private void initCameraPreview() {
         Log.d(TAG, "initCameraPreview().....");
-        mPreview = new Preview(getActivity(), surfaceHolder);
+        SurfaceView surfaceView = (SurfaceView) getView().findViewById(R.id.camerapreview);
+        surfaceView.setOnClickListener(this);
+        mPreview = new Preview(getActivity(), surfaceView);
         mPreview.setResultHandler(resultHandler);
         surfaceHolder.addCallback(mPreview);
-        this.cancel.setEnabled(false);
+        ImageView img = (ImageView) getView().findViewById(R.id.camera_preview_img);
+        mPreview.setImageView(img);
+        mPreview.setCharacterBoxView(this.characterBoxView);
     }
     public void takePicture() {
         mPreview.takePicture();
@@ -159,7 +153,6 @@ public class CameraFragment  extends Fragment implements View.OnClickListener{
             } else if (view.getId() == R.id.run_ocr) {
                 // run ocr
                 setEnabledToAllButtons(false);
-                setOwnerContainerSizeToPreview();
                 mPreview.startAutoFocus(CameraMode.Video);
             }
         }
@@ -173,11 +166,4 @@ public class CameraFragment  extends Fragment implements View.OnClickListener{
         this.runOCR.setEnabled(value);
         this.cancel.setEnabled(value);
     }
-
-    private void setOwnerContainerSizeToPreview() {
-        // TODO: set it with listener when surfaceView has been created
-        mPreview.setDisplayHeight(surfaceView.getHeight());
-        mPreview.setDisplayWidth(surfaceView.getWidth());
-    }
-
 }

@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
-import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.hardware.Camera;
@@ -19,6 +18,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -62,8 +62,7 @@ public class Preview implements SurfaceHolder.Callback {
     // the frame size , could be different than size of view (surfaceView) witch is displaying every each frame
     // the values are NEVER FLIP !
     private int frameWidth, frameHeight;
-    // the display size , could be different than size of frame, the values are NEVER FLIP !
-    private int displayWidth, displayHeight;
+
     // the size of frame, if the orientation is changing the values are FLIP w = h, h = w, see : onOrientationChanged()
     private volatile int w = 0, h = 0;
     // ***************************************************************************************
@@ -109,16 +108,21 @@ public class Preview implements SurfaceHolder.Callback {
     private ImageProcessing imageProcessing;
     private ImageView imageView;
     private final static int NUMBER_OF_OCR_RUN = 1;
+    private SurfaceView surfaceView;
 
-    public Preview(Activity context, SurfaceHolder surfaceHolder) {
-        this.surfaceHolder = surfaceHolder;
+    public Preview(Activity context, SurfaceView surfaceView) {
+        this.surfaceView = surfaceView;
+        this.surfaceHolder = surfaceView.getHolder();
+        this.surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         this.context = context;
+        this.surfaceHolder.addCallback(this);
     }
 
     public void removePrewievCallback() {
         Log.d(TAG, " removePreviewCallback()..");
         if (camera != null && !this.camerReleased) {
             this.firstInitVideoCall = true;
+
             camera.setPreviewCallback(null);
             camera.setPreviewCallbackWithBuffer(null);
         }
@@ -131,6 +135,7 @@ public class Preview implements SurfaceHolder.Callback {
         synchronized (camera) {
             Log.d(TAG, "closeCamera()..");
             camerReleased = true;
+            surfaceView.destroyDrawingCache();
             camera.stopPreview();
             camera.release();
             this.camera = null;
@@ -599,7 +604,7 @@ public class Preview implements SurfaceHolder.Callback {
                 if (freeFrame && ocrResultList.size() < NUMBER_OF_OCR_RUN) {
 
                     if (rotate != 0) {
-                        Bitmap b  = ImageProcessing.convertAndRotate(data,rotate, h, w);
+                        Bitmap b = ImageProcessing.convertAndRotate(data, rotate, h, w);
                         imageView.setImageBitmap(b);
                     } else {
                         int[] rgb = new int[data.length];
@@ -670,7 +675,6 @@ public class Preview implements SurfaceHolder.Callback {
                 throw new NullPointerException("CharacterBoxView has value null!");
             }
 
-            characterBoxView.setOrientationMode(orientationMode);
             characterBoxView.setRotate(ocrResult.getRotateValue());
 
             characterBoxView.setHeight(h);
@@ -876,25 +880,6 @@ public class Preview implements SurfaceHolder.Callback {
         this.previewbpp = previewbpp;
     }
 
-    /**
-     * the display size of view (surfaceView) witch is displaying every each frame.
-     * Could be different than size of frame
-     *
-     * @param displayWidth
-     */
-    public void setDisplayWidth(int displayWidth) {
-        this.displayWidth = displayWidth;
-    }
-
-    /**
-     * the display size of view (surfaceView) witch is displaying every each frame.
-     * Could be different than size of frame
-     *
-     * @param displayHeight
-     */
-    public void setDisplayHeight(int displayHeight) {
-        this.displayHeight = displayHeight;
-    }
 
     public Camera getCamera() {
         return camera;

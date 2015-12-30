@@ -7,8 +7,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
-import android.hardware.Sensor;
-import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,7 +16,6 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.OrientationEventListener;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -26,13 +23,11 @@ import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
-import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
-
 
 import de.bht.bachelor.R;
 import de.bht.bachelor.beans.OcrResult;
@@ -58,7 +53,7 @@ import de.bht.bachelor.ui.CharacterBoxView;
 public class CameraActivity extends MenuCreatorActivity implements OnClickListener {
 
     private Handler resultHandler;
-    private SurfaceView surfaceView;
+    //    private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
     private LayoutInflater controlInflater = null;
     private Preview mPreview;
@@ -87,7 +82,6 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     private Button cameraBtn;
 
 
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -111,7 +105,6 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         getWindow().setFormat(PixelFormat.UNKNOWN);
         // Create our Preview view and set it as the content of our activity.
         animationManager = new AnimationManager(this);
-        initSurfaceHolder();
         initComponents();
         initCameraPreview();
         if (savedInstanceState != null && !savedInstanceState.isEmpty()) {
@@ -134,33 +127,34 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
         return texttString;
     }
 
-    public void setTexttString(String str ){
+    public void setTexttString(String str) {
         texttString = str;
     }
 
-private static class MyHandler extends Handler{
-    CameraActivity cameraActivity;
+    private static class MyHandler extends Handler {
+        CameraActivity cameraActivity;
 
-    MyHandler(CameraActivity ac){
-        cameraActivity = ac;
-    }
-    @Override
-    public void handleMessage(Message msg) {
-        if (msg == null) {
-            Log.e(TAG, "Could not read message !");
-            return;
+        MyHandler(CameraActivity ac) {
+            cameraActivity = ac;
         }
-        switch (msg.what) {
-            case ServiceMessenger.MSG_TAKE_PICURE:
+
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg == null) {
+                Log.e(TAG, "Could not read message !");
+                return;
+            }
+            switch (msg.what) {
+                case ServiceMessenger.MSG_TAKE_PICURE:
 //                        onDismissDialog(DIALOG_CAMERA_FOCUS);
-                //animation.cancel();
+                    //animation.cancel();
 //                        animationManager.stopZoomAnimation();
 
-                cameraActivity.takePicture();
-                Log.d(TAG, "Get message to set enable in to the button");
-                break;
-            case ServiceMessenger.MSG_PICTURE_FROM_CAMRA:
-                cameraActivity.changeActivity(msg.obj, ActivityType.PICTURE_VIEW);// start PhotoActivity
+                    cameraActivity.takePicture();
+                    Log.d(TAG, "Get message to set enable in to the button");
+                    break;
+                case ServiceMessenger.MSG_PICTURE_FROM_CAMRA:
+                    cameraActivity.changeActivity(msg.obj, ActivityType.PICTURE_VIEW);// start PhotoActivity
 ////                        controlInflater = LayoutInflater.from(getBaseContext());
 ////                        getLayoutInflater().inflate(R.layout.fragment,null,false);
 //                        View viewControl = getLayoutInflater().inflate(R.layout.fragment,null,false);
@@ -173,47 +167,48 @@ private static class MyHandler extends Handler{
 //                        fragmentTransaction.add(R.id.contant, fragment);
 //                        fragmentTransaction.commit();
 
-                break;
-            case ServiceMessenger.MSG_CAMERA_ON_FOUCUS:
+                    break;
+                case ServiceMessenger.MSG_CAMERA_ON_FOUCUS:
 //                        onDismissDialog(DIALOG_CAMERA_FOCUS);
-                cameraActivity.animationManager.stopZoomAnimation();
-                cameraActivity.setEnabledToAllButtons((msg.arg1 == 0) ? false : true);
-                cameraActivity.surfaceView.destroyDrawingCache();
-                break;
-            case ServiceMessenger.MSG_OCR_BOX_VIEW:
-                cameraActivity.mPreview.removePrewievCallback();
-                cameraActivity.mPreview.closeCamera(cameraActivity.mPreview.getCamera());
-                cameraActivity.addCharacterOutlinesView((CharacterBoxView) msg.obj);
-                break;
-            case ServiceMessenger.MSG_OCR_RESULT:
+                    cameraActivity.animationManager.stopZoomAnimation();
+                    cameraActivity.setEnabledToAllButtons((msg.arg1 == 0) ? false : true);
+//                cameraActivity.surfaceView.destroyDrawingCache();
+                    break;
+                case ServiceMessenger.MSG_OCR_BOX_VIEW:
+                    cameraActivity.mPreview.removePrewievCallback();
+                    cameraActivity.mPreview.closeCamera(cameraActivity.mPreview.getCamera());
+                    cameraActivity.addCharacterOutlinesView((CharacterBoxView) msg.obj);
+                    break;
+                case ServiceMessenger.MSG_OCR_RESULT:
 //                        mPreview.cancelAllOcrTasks();
 //                        mPreview.resetPreview();
-                cameraActivity.changeActivity(msg.obj, ActivityType.OCR_VIEW);// start OCR Result
-                break;
-            case 8:
-                cameraActivity.initCameraPreview();
-                break;
-            case 9:
-                cameraActivity.getMessageForNoOcrOnPreview();
-                break;
+                    cameraActivity.changeActivity(msg.obj, ActivityType.OCR_VIEW);// start OCR Result
+                    break;
+                case 8:
+                    cameraActivity.initCameraPreview();
+                    break;
+                case 9:
+                    cameraActivity.getMessageForNoOcrOnPreview();
+                    break;
 
-            case 10:
-                if (cameraActivity.getTexttString() != null) {
-                    try {
-                        Log.d(TAG, "calling tts again from handler");
-                        cameraActivity.onDifferentDeviceLanguage();
-                        TTS.getInstance().speak(cameraActivity.getTexttString(), false);
-                        cameraActivity.setTexttString(null);
-                    } catch (Exception e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                case 10:
+                    if (cameraActivity.getTexttString() != null) {
+                        try {
+                            Log.d(TAG, "calling tts again from handler");
+                            cameraActivity.onDifferentDeviceLanguage();
+                            TTS.getInstance().speak(cameraActivity.getTexttString(), false);
+                            cameraActivity.setTexttString(null);
+                        } catch (Exception e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
                     }
-                }
-                break;
-        }
+                    break;
+            }
 
+        }
     }
-}
+
     private void createHandler() {
         resultHandler = new MyHandler(this);
     }
@@ -255,14 +250,6 @@ private static class MyHandler extends Handler{
         }
     }
 
-    private void initSurfaceHolder() {
-        Log.d(TAG, "initSurfaceHolder()....");
-        surfaceView = (SurfaceView) findViewById(R.id.camerapreview);
-        surfaceHolder = surfaceView.getHolder();
-        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        surfaceView.setOnClickListener(this);
-    }
-
     private void createControlView() {
         controlInflater = LayoutInflater.from(getBaseContext());
         View viewControl = controlInflater.inflate(R.layout.control, null);
@@ -272,10 +259,10 @@ private static class MyHandler extends Handler{
 
     private void initCameraPreview() {
         Log.d(TAG, "initCameraPreview().....");
-
-        mPreview = new Preview(this, surfaceHolder);
+        SurfaceView surfaceView = (SurfaceView) findViewById(R.id.camerapreview);
+        surfaceView.setOnClickListener(this);
+        mPreview = new Preview(this, surfaceView);
         mPreview.setResultHandler(resultHandler);
-        surfaceHolder.addCallback(mPreview);
         ImageView img = (ImageView) findViewById(R.id.camera_preview_img);
         mPreview.setImageView(img);
         mPreview.setCharacterBoxView(this.characterBoxView);
@@ -300,7 +287,7 @@ private static class MyHandler extends Handler{
         this.cameraLens.setOnClickListener(this);
         this.settingBtn = (FrameLayout) findViewById(R.id.setting_layout);
         this.settingBtn.setOnClickListener(this);
-        this.cancelLayout =  (FrameLayout) findViewById(R.id.cancel_layout);
+        this.cancelLayout = (FrameLayout) findViewById(R.id.cancel_layout);
         this.cancelBtn.setOnClickListener(this);
         this.cameraBtn = (Button) findViewById(R.id.camera);
 
@@ -326,7 +313,7 @@ private static class MyHandler extends Handler{
                 cancelBtn.setEnabled(false);
                 if (mPreview.getCamera() != null) {
                     mPreview.getCamera().cancelAutoFocus();
-                }else{
+                } else {
                     mPreview.openCamera();
                     mPreview.onSurfaceChanged(mPreview.getCamera());
                 }
@@ -344,7 +331,6 @@ private static class MyHandler extends Handler{
                 }
                 cancelBtn.setEnabled(true);
                 cameraBtn.setEnabled(false);
-                setOwnerContainerSizeToPreview();
                 mPreview.startAutoFocus(CameraMode.Video);
                 animationManager.addAndStartZoomAnimation(cameraLens);
                 break;
@@ -401,12 +387,6 @@ private static class MyHandler extends Handler{
         this.cancelBtn.setEnabled(value);
     }
 
-    private void setOwnerContainerSizeToPreview() {
-        // TODO: set it with listener when surfaceView has been created
-        mPreview.setDisplayHeight(surfaceView.getHeight());
-        mPreview.setDisplayWidth(surfaceView.getWidth());
-
-    }
 
     /*
      * take camera picturenew
@@ -466,29 +446,13 @@ private static class MyHandler extends Handler{
         super.onConfigurationChanged(newConfig);
     }
 
-    //    private void stopAndClosePreview() {
-//        Log.e(TAG, "stopAndClosePreview()....");
-//        if (mPreview != null) {
-//            mPreview.cancelAllOcrTasks();
-//
-//            if (mPreview.getOcr() != null) {
-//                mPreview.getOcr().clearAndCloseApi();
-//
-//            }
-//            if(mPreview.getCamera() != null) {
-//                mPreview.removePrewievCallback();
-//            }
-//            isPreviewInitialized = false;
-//            mPreview.stopCamera();
-//        }
-//    }
     @Override
     public void onPause() {
         Log.d(TAG, "onPause().....");
         super.onPause();
-        if (surfaceView != null && mPreview.getCamera() != null) {
+        if (mPreview.getCamera() != null) {
             mPreview.getCamera().stopPreview();
-            surfaceView.setVisibility(View.GONE);
+//            surfaceView.setVisibility(View.GONE);
         }
     }
 
@@ -496,10 +460,7 @@ private static class MyHandler extends Handler{
     public void onResume() {
         Log.d(TAG, "onResume..................");
         super.onResume();
-        if (surfaceView != null) {
-            surfaceView.setVisibility(View.VISIBLE);
-        }
-//            mPreview.cleanOcrResultList();
+
         mPreview.resetPreview();
 
         this.runOCR.setEnabled(true);
@@ -585,14 +546,9 @@ private static class MyHandler extends Handler{
         isReceiveRegistered = savedInstanceState.getBoolean("isReceiveRegistered");
         if (!isScreenOn) {
             Log.d(TAG, "----------------- the Screen is not On------------------");
-//            TTS.getInstance().shutdown();
-//            isScreenOn = false;
-//            setLanguageToTTS();
+
         }
-//        if(savedInstanceState.containsKey(ORIENTATION_MODE) && savedInstanceState.getString(ORIENTATION_MODE) != null ) {
-//
-//            mPreview.setRestoredOrientatiomMode(OrientationManger.getOrientationModeByName(savedInstanceState.getString(ORIENTATION_MODE)));
-//        }
+
     }
 
 

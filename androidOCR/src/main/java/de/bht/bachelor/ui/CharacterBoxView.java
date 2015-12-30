@@ -25,17 +25,13 @@ import de.bht.bachelor.graphic.PaintCreator;
 public class CharacterBoxView extends View {
 
 
-    float propW, propH = 0;
+    float propH = 0;
 
-    private boolean isInvisible = false;
     /* if is true change color from transparent in to visible */
-    private boolean needChangeColor = false;
     private static final String TAG = CharacterBoxView.class.getSimpleName();
-    private OrientationMode orientationMode;
     private Vector<Rect> rects;// = new ArrayList<Rect>();
     // computed proportions of sizes
     private Vector<Rect> propRects;
-    private Rect rect;
     private Paint strokePaint;
     private int frameWidth = 0;
     private int frameHeight = 0;
@@ -64,27 +60,6 @@ public class CharacterBoxView extends View {
     }
 
     /**
-     * Draw character outlines from a Frame in to the canvas of this View.
-     *
-     * @param context App contex
-     * @param rects   List of {@link Rect} as character boxes returning after OCR-analysing of the frame
-     * @param width   of Frame witch was passing in to OCR
-     * @param height  of Frame witch was passing in to OCR
-     */
-    public CharacterBoxView(Context context, Vector<Rect> rects, int frameWidth, int frameHeight) {
-        super(context);
-        this.rects = rects;
-        this.strokePaint = PaintCreator.createStrokePaintForPreview();
-        setWidth(frameWidth);
-        setHeight(frameHeight);
-        this.frameHeight = frameHeight;
-        this.frameWidth = frameWidth;
-
-//        restoreView();
-        // TODO Auto-generated constructor stub
-    }
-
-    /**
      * Draw character outlines in to the canvas of this View.
      * The Frame witch was passed to OCR could have different dimension than
      * the Frame showing in the displaying View (SurfaceView).
@@ -92,7 +67,7 @@ public class CharacterBoxView extends View {
      * The proportion will be compute and the dimension of the boxes will be adapt in to the display view.
      *
      */
-    public CharacterBoxView(Context context, Vector<Rect> rects, int frameWidth, int frameHeight, OrientationMode orientationMode) {
+    public CharacterBoxView(Context context, Vector<Rect> rects, int frameWidth, int frameHeight) {
         super(context);
         Log.d(TAG, "Constructor CharacterBoxView: width: " + frameWidth + ",height: " + frameHeight);
         this.rects = rects;
@@ -101,7 +76,6 @@ public class CharacterBoxView extends View {
         setHeight(frameHeight);
         this.frameHeight = frameHeight;
         this.frameWidth = frameWidth;
-        this.orientationMode = orientationMode;
         strokePaint.setStrokeWidth(3);
         computeDifferenze(rects);
         setWillNotDraw(false);
@@ -165,7 +139,6 @@ public class CharacterBoxView extends View {
 
     public void setRects(Vector<Rect> rects) {
         this.strokePaint.setColor(Color.GREEN);
-        needChangeColor = false;
 
         if (this.rects != null && this.rects.equals(rects)) {
             return;
@@ -174,21 +147,14 @@ public class CharacterBoxView extends View {
         computeDifferenze(rects);
     }
 
-    public void makeVisible() {
-        isInvisible = false;
-        needChangeColor = true;
-
-    }
 
     public void resetView() {
         this.strokePaint.setColor(Color.TRANSPARENT);
-        isInvisible = true;
         restoreView();
     }
 
     public void cleanView() {
         this.strokePaint.setColor(Color.TRANSPARENT);
-        isInvisible = true;
         restoreView();
     }
 
@@ -214,8 +180,5 @@ public class CharacterBoxView extends View {
         this.frameHeight = frameHeight;
     }
 
-    public void setOrientationMode(OrientationMode orientationMode) {
-        this.orientationMode = orientationMode;
-    }
 
 }
