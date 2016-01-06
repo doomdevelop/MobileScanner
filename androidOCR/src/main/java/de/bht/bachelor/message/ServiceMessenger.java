@@ -17,7 +17,7 @@ public class ServiceMessenger {
 	public void sendMessage(int arg, int what, Object obj) {
 		if (handler == null)
 			throw new NullPointerException("Could not set message ! handler has value null !");
-		Log.d(TAG, "Setting message !");
+		Log.d(TAG, "send message ! : "+what);
 		Message resultMsg = new Message();
 		resultMsg.what = what;
 		resultMsg.arg1 = arg;

@@ -70,11 +70,8 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
     private String texttString;
     private static final int DIALOG_CAMERA_FOCUS = 10;
     public static final String OCR_RESULT_EXTRA_KEY = "ocr_result_extra_key";
-
     private ProgressDialog progressDialog;
     public final static String EXTRA_MESSAGE_ISO3_TO_DOWNLOAD = "de.bht.bachelor.activities.DOWNLOAD_TESS_FOR_CURENT_ISO";
-
-
     private AnimationManager animationManager;
     private static final String ORIENTATION_MODE = "orientation_mode";
     private FrameLayout settingBtn;
@@ -171,7 +168,8 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
                 case ServiceMessenger.MSG_CAMERA_ON_FOUCUS:
 //                        onDismissDialog(DIALOG_CAMERA_FOCUS);
                     cameraActivity.animationManager.stopZoomAnimation();
-                    cameraActivity.setEnabledToAllButtons((msg.arg1 == 0) ? false : true);
+
+                    
 //                cameraActivity.surfaceView.destroyDrawingCache();
                     break;
                 case ServiceMessenger.MSG_OCR_BOX_VIEW:
@@ -313,6 +311,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
                 cancelBtn.setEnabled(false);
                 if (mPreview.getCamera() != null) {
                     mPreview.getCamera().cancelAutoFocus();
+                    mPreview.removePrewievCallback();
                 } else {
                     mPreview.openCamera();
                     mPreview.onSurfaceChanged(mPreview.getCamera());
@@ -332,7 +331,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
                 cancelBtn.setEnabled(true);
                 cameraBtn.setEnabled(false);
                 mPreview.startAutoFocus(CameraMode.Video);
-                animationManager.addAndStartZoomAnimation(cameraLens);
+                animationManager.startAnimation(cameraLens);
                 break;
             case R.id.setting_layout:
                 Intent intent = new Intent(this, MenuLanguagesActivity.class);

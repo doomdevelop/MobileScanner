@@ -132,14 +132,14 @@ public class Preview implements SurfaceHolder.Callback {
         if (camera == null || camerReleased) {
             return;
         }
-        synchronized (camera) {
+//        synchronized (camera) {
             Log.d(TAG, "closeCamera()..");
             camerReleased = true;
             surfaceView.destroyDrawingCache();
             camera.stopPreview();
             camera.release();
             this.camera = null;
-        }
+//        }
     }
 
     private int getCameraId(Camera camera) {
@@ -415,7 +415,7 @@ public class Preview implements SurfaceHolder.Callback {
             ocrResultList.clear();
             firstInitVideoCall = true;
         }
-        synchronized (camera) {
+//        synchronized (camera) {
             if (cameraMode == CameraMode.Video) {
 
                 if (currentCameraMode == CameraMode.Video) {
@@ -441,18 +441,18 @@ public class Preview implements SurfaceHolder.Callback {
             this.currentCameraMode = cameraMode;
 
             camera.autoFocus(myAutoFocusCallback);
-        }
+//        }
     }
 
     public void resetPreview() {
 
         Log.d(TAG, "resetPreview()...");
-        synchronized (this) {
+//        synchronized (this) {
             if (this.characterBoxView != null) {
                 this.characterBoxView.cleanView();
             }
             setControllVariablesToDefault();
-        }
+//        }
     }
 
     public boolean isCamerReleased() {
@@ -479,7 +479,7 @@ public class Preview implements SurfaceHolder.Callback {
         if (ocrTacks == null) {
             return;
         }
-        synchronized (ocrTacks) {
+//        synchronized (ocrTacks) {
             for (SendFrameToOcrTasc ocrTasc : ocrTacks) {
                 if (ocrTasc != null && !ocrTasc.isCancelled()) {
                     ocrTasc.cancel(true);
@@ -487,7 +487,7 @@ public class Preview implements SurfaceHolder.Callback {
                 }
             }
             ocrTacks.clear();
-        }
+//        }
     }
 
     private AutoFocusCallback myAutoFocusCallback = new AutoFocusCallback() {
@@ -499,8 +499,7 @@ public class Preview implements SurfaceHolder.Callback {
                     Log.d(TAG, "onAutoFocus()....picture mode, focus: " + isOnFocus);
 
                     if (isOnFocus) {
-                        serviceMessenger = new ServiceMessenger(resultHandler);
-                        serviceMessenger.sendMessage(1, ServiceMessenger.MSG_TAKE_PICURE, null);// set enable=true to the button and call take photo
+                        getServiceMessenger().sendMessage(1, ServiceMessenger.MSG_TAKE_PICURE, null);// set enable=true to the button and call take photo
                     } else {
                         startAutoFocus(currentCameraMode);
                     }
@@ -526,8 +525,7 @@ public class Preview implements SurfaceHolder.Callback {
                                 firstInitVideoCall = false;
                             }
 
-                            serviceMessenger = new ServiceMessenger(resultHandler);
-                            serviceMessenger.sendMessage(1, ServiceMessenger.MSG_CAMERA_ON_FOUCUS, null);// set enable=true to the button and call take photo
+                            getServiceMessenger().sendMessage(1, ServiceMessenger.MSG_CAMERA_ON_FOUCUS, null);// set enable=true to the button and call take photo
                         } else {
                             startAutoFocus(currentCameraMode);
                         }
@@ -549,9 +547,7 @@ public class Preview implements SurfaceHolder.Callback {
             camera.startPreview();
             ChangeActivityHelper.getInstance().setRawPicture(data);
             ChangeActivityHelper.getInstance().setOrientationMode(orientationMode);
-            serviceMessenger = new ServiceMessenger(resultHandler);
-
-            serviceMessenger.sendMessage(0, 1, ActivityType.PICTURE_VIEW);
+            getServiceMessenger().sendMessage(0, 1, ActivityType.PICTURE_VIEW);
         }
     };
     /**
@@ -560,7 +556,7 @@ public class Preview implements SurfaceHolder.Callback {
     private PreviewCallback previewCallback = new PreviewCallback() {
         @Override
         public void onPreviewFrame(byte[] data, Camera camera) {
-            synchronized (this) {
+//            synchronized (this) {
 
                 if (data == null) {
                     Log.d(TAG, "Data has value null, return");
@@ -622,7 +618,7 @@ public class Preview implements SurfaceHolder.Callback {
 
                 camera.addCallbackBuffer(data);
             }
-        }
+//        }
     };
 
     /*
@@ -689,8 +685,7 @@ public class Preview implements SurfaceHolder.Callback {
                 if (bestOcrResult != null) {
                     Log.d(TAG, "GET BEST RESULT,WILL FINISHING VIDEO CALLBACK AND START RESULT ACTIVITY !");
                     freeFrame = false;
-                    serviceMessenger = new ServiceMessenger(resultHandler);
-                    serviceMessenger.sendMessage(1, ServiceMessenger.MSG_OCR_RESULT, bestOcrResult);
+                    getServiceMessenger().sendMessage(1, ServiceMessenger.MSG_OCR_RESULT, bestOcrResult);
                 } else {
                     freeFrame = false;
                     cleanOcrResultList();
@@ -699,9 +694,7 @@ public class Preview implements SurfaceHolder.Callback {
                 }
             }
 
-
-            serviceMessenger = new ServiceMessenger(resultHandler);
-            serviceMessenger.sendMessage(0, ServiceMessenger.MSG_OCR_BOX_VIEW, characterBoxView);// set enable=true to the button
+            getServiceMessenger().sendMessage(0, ServiceMessenger.MSG_OCR_BOX_VIEW, characterBoxView);// set enable=true to the button
 
             if (!waitForCameraFocus) {
                 // is not waiting for camera focus , so can run next task
@@ -715,11 +708,16 @@ public class Preview implements SurfaceHolder.Callback {
 
         @Override
         public void onTrainDataerror() {
-            serviceMessenger.sendMessage(0, 9, null);
+            getServiceMessenger().sendMessage(0, 9, null);
         }
     };
 
-
+    private ServiceMessenger getServiceMessenger(){
+        if(serviceMessenger == null){
+            serviceMessenger = new ServiceMessenger(resultHandler);
+        }
+        return serviceMessenger;
+    }
     private void getRotateByNewOrientationMode(OrientationMode orientationMode) {
         Log.d(TAG, "-------- getRotateByNewOrientationMode -------- ");
         if (orientationMode == null) {

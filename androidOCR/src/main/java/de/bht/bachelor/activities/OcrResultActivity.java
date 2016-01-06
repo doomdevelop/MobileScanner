@@ -54,6 +54,8 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
     private ViewPager viewPager;
     private List<Fragment> slides;
     private CustomScreenSlideAdapter pagerAdapter;
+    private static Long OCR_RESULT_ID = -1L;
+    private boolean isOcrResultInDataBase = true;
 
 
     @Override
@@ -112,9 +114,9 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
         pagerAdapter = new CustomScreenSlideAdapter(getSupportFragmentManager());
         viewPager.setAdapter(pagerAdapter);
         Intent i = getIntent();
-        Long id = i.getLongExtra(CameraActivity.OCR_RESULT_EXTRA_KEY, -1);
-        List<OcrResult> results = OcrResult.getOcrResultByid(id);
-        Log.d(TAG, "result size: " + results.size() + " from ID " + id);
+         OCR_RESULT_ID = i.getLongExtra(CameraActivity.OCR_RESULT_EXTRA_KEY, -1);
+        final List<OcrResult> results = OcrResult.getOcrResultByid(OCR_RESULT_ID);
+        Log.d(TAG, "result size: " + results.size() + " from ID " + OCR_RESULT_ID);
         this.ocrResult = results.get(0);
         setTextOcrResult();
 
@@ -129,8 +131,40 @@ public class OcrResultActivity extends MenuCreatorActivity implements OnClickLis
                 Toast.makeText(OcrResultActivity.this, getString(R.string.copy_text_to_clipboard_msg), Toast.LENGTH_LONG).show();
             }
         });
+        final Button save = (Button) findViewById(R.id.save_result);
+        if(results == null){
+            changeSaveCancelButtonState(save,false);
+            isOcrResultInDataBase = false;
+        }
+        save.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG,"onClick btn save");
+
+                if(isOcrResultInDataBase){
+                    OcrResult.deleteById(ocrResult.getId());
+                    save.setBackgroundResource(R.drawable.ic_action_save);
+                }else {
+                    ocrResult.save();
+                    save.setBackgroundResource(R.drawable.ic_action_cancel);
+
+
+                }
+                isOcrResultInDataBase = !isOcrResultInDataBase;
+            }
+        });
+
         createHandler();
 
+    }
+
+    private void changeSaveCancelButtonState(final Button save,boolean hasToCancelState){
+        if(hasToCancelState){
+            save.setBackgroundResource(R.drawable.ic_action_save);
+        }else{
+            save.setBackgroundResource(R.drawable.ic_action_cancel);
+        }
+        save.invalidate();
     }
 
     public void showFullScreenDialog(Bitmap img, int resId) {

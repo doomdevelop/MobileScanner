@@ -35,6 +35,16 @@
             android:layout_margin="5dp"
             android:paddingLeft="25dp"
             android:background="@drawable/ic_action_copy" />
+
+        <Button
+            android:id="@+id/save_result"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="right|center_vertical"
+            android:layout_marginLeft="20dp"
+            android:layout_margin="5dp"
+            android:paddingLeft="25dp"
+            android:background="@drawable/ic_action_save" />
     </LinearLayout>
 
     <LinearLayout

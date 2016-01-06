@@ -15,14 +15,10 @@ public class AnimationManager {
     private Animation zoomAnimation;
     private volatile boolean zoomOnRun = false;
     private static final String TAG = AnimationManager.class.getSimpleName();
+    private View mView;
 
-    public AnimationManager(Context context){
-        zoomAnimation= AnimationUtils.loadAnimation(context, R.anim.zoom);
-
-    }
-
-    public void addAndStartZoomAnimation(final View view){
-        Log.d(TAG, "addAndStartZoomAnimation()... ");
+    public AnimationManager(Context context) {
+        zoomAnimation = AnimationUtils.loadAnimation(context, R.anim.zoom);
         zoomAnimation.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
@@ -31,25 +27,29 @@ public class AnimationManager {
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                if(zoomOnRun) {
-                    view.startAnimation(animation);
+                if (zoomOnRun) {
+                    mView.startAnimation(animation);
                 }
-                }
+            }
 
             @Override
             public void onAnimationRepeat(Animation animation) {
 
             }
         });
-
-        view.startAnimation(zoomAnimation);
     }
-    public void stopZoomAnimation(){
-        Log.d(TAG, "stopZoomAnimation()... ");
-        zoomOnRun  =false;
-        zoomAnimation.cancel();
-        zoomAnimation.reset();
 
+    public void startAnimation(final View view) {
+        Log.d(TAG, "startAnimation()... ");
+        zoomAnimation.reset();
+        mView = view;
+        mView.startAnimation(zoomAnimation);
+    }
+
+    public void stopZoomAnimation() {
+        Log.d(TAG, "stopZoomAnimation()... ");
+        zoomOnRun = false;
+        zoomAnimation.cancel();
     }
 
 }

@@ -10,6 +10,7 @@ import android.util.Log;
 import com.activeandroid.Model;
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
+import com.activeandroid.query.Delete;
 import com.activeandroid.query.Select;
 import com.googlecode.leptonica.android.WriteFile;
 
@@ -210,5 +211,9 @@ public class OcrResult extends Model implements Parcelable {
                 .from(OcrResult.class)
                 .where("id = ?", id)
                 .execute();
+    }
+
+    public static List<OcrResult> deleteById(Long id){
+      return  new Delete().from(OcrResult.class).where("Id = ?", id).execute();
     }
 }

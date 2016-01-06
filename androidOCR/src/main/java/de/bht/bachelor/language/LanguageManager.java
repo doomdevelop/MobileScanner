@@ -427,6 +427,7 @@ public class LanguageManager {
 	 * @return display TTS language , same as Locale.getDisplayLanguage() is returning
 	 */
 	public String getCurrentTtsDisplayLanguage() {
+		//TODO: NullPointer !
 		return currentTtsLanguage.getDisplayLanguage();
 	}
 
