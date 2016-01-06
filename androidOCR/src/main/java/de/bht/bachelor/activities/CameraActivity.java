@@ -169,7 +169,7 @@ public class CameraActivity extends MenuCreatorActivity implements OnClickListen
 //                        onDismissDialog(DIALOG_CAMERA_FOCUS);
                     cameraActivity.animationManager.stopZoomAnimation();
 
-                    
+
 //                cameraActivity.surfaceView.destroyDrawingCache();
                     break;
                 case ServiceMessenger.MSG_OCR_BOX_VIEW:
